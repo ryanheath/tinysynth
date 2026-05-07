@@ -91,6 +91,30 @@ internal static class SynthRenderer
         return Math.Clamp(value, minValue, maxValue);
     }
 
+    public static void DrawToggle(
+        Rectangle bounds,
+        string label,
+        bool value,
+        Color accentColor,
+        Color accentSoftColor,
+        Color borderColor,
+        Color panelColor,
+        Color textColor,
+        Color mutedTextColor)
+    {
+        Graphics.DrawText(label, (int)bounds.X, (int)bounds.Y - 1, 18, textColor);
+        Graphics.DrawText(value ? "On" : "Off", (int)bounds.X + 78, (int)bounds.Y - 1, 18, mutedTextColor);
+
+        Rectangle trackBounds = new(bounds.X + 84, bounds.Y + 1, 42, 22);
+        float knobSize = 18f;
+        float knobX = value ? trackBounds.X + trackBounds.Width - knobSize - 2f : trackBounds.X + 2f;
+        Rectangle knobBounds = new(knobX, trackBounds.Y + 2f, knobSize, knobSize);
+
+        Graphics.DrawRectangleRounded(trackBounds, 0.5f, 8, value ? accentSoftColor : panelColor);
+        Graphics.DrawRectangleRoundedLinesEx(trackBounds, 0.5f, 8, 1.5f, value ? accentColor : borderColor);
+        Graphics.DrawRectangleRounded(knobBounds, 0.5f, 8, value ? accentColor : mutedTextColor);
+    }
+
     public static void DrawWaveformScope(Rectangle bounds, float[] samples, int writeIndex, Color waveColor, Color borderColor, Color labelColor)
     {
         Graphics.DrawText("Output waveform", (int)bounds.X + 18, (int)bounds.Y + 16, 22, labelColor);
@@ -163,7 +187,7 @@ internal static class SynthRenderer
         Graphics.DrawRectangleLinesEx(bounds, 1f, outlineColor);
     }
 
-    private static bool Contains(Rectangle bounds, Vector2 point)
+    public static bool Contains(Rectangle bounds, Vector2 point)
     {
         return point.X >= bounds.X
             && point.X <= bounds.X + bounds.Width

@@ -59,6 +59,7 @@ internal sealed class TinySynthController
     private int _activeKeyboardMidiNote = -1;
     private int _activeSlider = -1;
     private int _scopeWriteIndex;
+    private bool _holdPedalEnabled;
 
     public TinySynthController(
         AudioStream audioStream,
@@ -109,6 +110,17 @@ internal sealed class TinySynthController
         float sliderRowOneY = layout.SliderRowOneY;
         float sliderRowTwoY = layout.SliderRowTwoY;
         float sliderWidth = layout.SliderWidth;
+        Rectangle holdPedalBounds = new(keyboardPanel.X + keyboardPanel.Width - 158, keyboardPanel.Y + 12, 126, 24);
+
+        if (mousePressed && SynthRenderer.Contains(holdPedalBounds, mousePosition))
+        {
+            _holdPedalEnabled = !_holdPedalEnabled;
+
+            if (!_holdPedalEnabled && _activeKeyboardMidiNote < 0 && _activePointerMidiNote < 0)
+            {
+                _synthVoice.ReleaseNote();
+            }
+        }
 
         PianoKeyLayout[] keys = KeyboardLayoutBuilder.Build(keyboardPanel, _keyboardStartMidi, _keyboardNoteCount);
         int hoveredMidiNote = KeyboardLayoutBuilder.GetHoveredMidiNote(keys, mousePosition);
@@ -124,7 +136,11 @@ internal sealed class TinySynthController
         }
         else if (_activeKeyboardMidiNote >= 0)
         {
-            _synthVoice.ReleaseNote();
+            if (!_holdPedalEnabled && _activePointerMidiNote < 0)
+            {
+                _synthVoice.ReleaseNote();
+            }
+
             _activeKeyboardMidiNote = -1;
         }
 
@@ -141,7 +157,7 @@ internal sealed class TinySynthController
 
         if (mouseReleased && _activePointerMidiNote >= 0)
         {
-            if (_activeKeyboardMidiNote < 0)
+            if (!_holdPedalEnabled && _activeKeyboardMidiNote < 0)
             {
                 _synthVoice.ReleaseNote();
             }
@@ -347,6 +363,16 @@ internal sealed class TinySynthController
 
         SynthRenderer.DrawWaveformScope(waveformPanel, _scopeBuffer, _scopeWriteIndex, _accentStrongColor, _borderColor, _mutedTextColor);
         Graphics.DrawText("Keyboard", (int)keyboardPanel.X + 18, (int)keyboardPanel.Y + 14, 22, _textColor);
+        SynthRenderer.DrawToggle(
+            holdPedalBounds,
+            "Hold pedal",
+            _holdPedalEnabled,
+            _accentColor,
+            _accentSoftColor,
+            _borderColor,
+            _panelColor,
+            _textColor,
+            _mutedTextColor);
         SynthRenderer.DrawKeyboard(keys, _synthVoice.ActiveMidiNote, hoveredMidiNote, _whiteKeyColor, _borderColor, _darkKeyColor, _accentSoftColor, _accentStrongColor, _textColor);
 
         Graphics.EndDrawing();

@@ -102,6 +102,11 @@ internal sealed class SynthVoice
 
     private void UpdateFrequency(float deltaTime, SynthParameters parameters)
     {
+        if (ActiveMidiNote >= 0)
+        {
+            _targetFrequency = ApplyDetune(MidiUtilities.MidiToFrequency(ActiveMidiNote), parameters.DetuneCents);
+        }
+
         if (parameters.GlideSeconds <= 0.001f)
         {
             _currentFrequency = _targetFrequency;
