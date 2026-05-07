@@ -14,6 +14,12 @@ internal sealed class SynthParameters
 
     public IReadOnlyList<OscillatorParameters> Oscillators => _oscillators;
 
+    public FilterType FilterType { get; set; } = FilterType.Off;
+
+    public float FilterCutoffHz { get; set; } = 12_000f;
+
+    public float FilterResonance { get; set; } = 0.15f;
+
     public OscillatorParameters GetOscillator(int index)
     {
         return _oscillators[Math.Clamp(index, 0, _oscillators.Length - 1)];

@@ -13,7 +13,7 @@ const int keyboardNoteCount = 49;
 const float masterGain = 0.22f;
 const float panelGap = 20f;
 const float panelMargin = 20f;
-const float controlPanelHeight = 300f;
+const float controlPanelHeight = 360f;
 const float keyboardPanelHeight = 180f;
 
 float[] audioBuffer = new float[audioBufferSize];

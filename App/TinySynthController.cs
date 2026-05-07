@@ -11,6 +11,12 @@ using TinySynth.UI;
 
 namespace TinySynth.App;
 
+internal enum ParameterSection
+{
+    Oscillator,
+    Filter
+}
+
 internal sealed class TinySynthController
 {
     private static readonly (KeyboardKey Key, int MidiNote)[] _computerKeyboardMappings =
@@ -64,6 +70,7 @@ internal sealed class TinySynthController
     private int _activeSlider = -1;
     private int _scopeWriteIndex;
     private bool _holdPedalEnabled;
+    private ParameterSection _activeParameterSection = ParameterSection.Oscillator;
     private float _masterVolume;
 
     public TinySynthController(
@@ -132,6 +139,8 @@ internal sealed class TinySynthController
         float sliderRowOneY = layout.SliderRowOneY;
         float sliderRowTwoY = layout.SliderRowTwoY;
         float sliderWidth = layout.SliderWidth;
+        float filterSliderY = layout.FilterSliderY;
+        float filterSliderWidth = layout.FilterSliderWidth;
         Rectangle holdPedalBounds = new(keyboardPanel.X + keyboardPanel.Width - 190, keyboardPanel.Y + 12, 192, 24);
         Rectangle masterVolumeBounds = new(keyboardPanel.X + keyboardPanel.Width - 400, keyboardPanel.Y + 12, 180, 20);
 
@@ -162,40 +171,50 @@ internal sealed class TinySynthController
         SynthRenderer.DrawPanel(keyboardPanel, _keyboardPanelColor, _borderColor);
 
         Graphics.DrawText("TinySynth", (int)controlPanel.X + 20, (int)controlPanel.Y + 12, 28, _textColor);
-        Graphics.DrawText("Oscillators", (int)controlPanel.X + 20, (int)controlPanel.Y + 42, 18, _mutedTextColor);
+        Graphics.DrawText("Parameters", (int)controlPanel.X + 20, (int)controlPanel.Y + 42, 18, _mutedTextColor);
 
-        int previousOscillatorIndex = _activeOscillatorIndex;
-        _activeOscillatorIndex = SynthRenderer.DrawOscillatorButtons(layout.OscillatorButtonsArea, _synthParameters.Oscillators, _activeOscillatorIndex, mousePosition, mousePressed, _panelColor, _borderColor, _accentSoftColor, _accentStrongColor, _textColor);
+        ParameterSection previousParameterSection = _activeParameterSection;
+        _activeParameterSection = (ParameterSection)SynthRenderer.DrawParameterSectionButtons(layout.ModeButtonsArea, (int)_activeParameterSection, mousePosition, mousePressed, _panelColor, _borderColor, _accentSoftColor, _accentStrongColor, _textColor);
 
-        if (previousOscillatorIndex != _activeOscillatorIndex)
+        if (previousParameterSection != _activeParameterSection)
         {
-            activeOscillator = _synthParameters.GetOscillator(_activeOscillatorIndex);
             _activeSlider = -1;
         }
 
-        Graphics.DrawText($"Waveform · Oscillator {_activeOscillatorIndex + 1}", (int)controlPanel.X + 20, (int)controlPanel.Y + 110, 18, _mutedTextColor);
-        Rectangle oscillatorEnabledBounds = new(controlPanel.X + 410, controlPanel.Y + 106, 192, 24);
-
-        if (mousePressed && SynthRenderer.Contains(oscillatorEnabledBounds, mousePosition))
+        if (_activeParameterSection == ParameterSection.Oscillator)
         {
-            activeOscillator.Enabled = !activeOscillator.Enabled;
-            _activeSlider = -1;
-        }
+            int previousOscillatorIndex = _activeOscillatorIndex;
+            _activeOscillatorIndex = SynthRenderer.DrawOscillatorButtons(layout.OscillatorButtonsArea, _synthParameters.Oscillators, _activeOscillatorIndex, mousePosition, mousePressed, _panelColor, _borderColor, _accentSoftColor, _accentStrongColor, _textColor);
 
-        SynthRenderer.DrawToggle(
-            oscillatorEnabledBounds,
-            "Enabled",
-            activeOscillator.Enabled,
-            _accentColor,
-            _accentSoftColor,
-            _borderColor,
-            _panelColor,
-            _textColor,
-            _mutedTextColor);
+            if (previousOscillatorIndex != _activeOscillatorIndex)
+            {
+                activeOscillator = _synthParameters.GetOscillator(_activeOscillatorIndex);
+                _activeSlider = -1;
+            }
 
-        activeOscillator.Waveform = SynthRenderer.DrawWaveformButtons(layout.WaveformButtonsArea, activeOscillator.Waveform, activeOscillator.Enabled, mousePosition, mousePressed, _panelColor, _borderColor, _accentSoftColor, _accentStrongColor, _textColor);
+            Graphics.DrawText($"Waveform · Oscillator {_activeOscillatorIndex + 1}", (int)controlPanel.X + 20, (int)controlPanel.Y + 162, 18, _mutedTextColor);
+            Rectangle oscillatorEnabledBounds = new(controlPanel.X + 410, controlPanel.Y + 158, 192, 24);
 
-        activeOscillator.Gain = SynthRenderer.DrawSlider(
+            if (mousePressed && SynthRenderer.Contains(oscillatorEnabledBounds, mousePosition))
+            {
+                activeOscillator.Enabled = !activeOscillator.Enabled;
+                _activeSlider = -1;
+            }
+
+            SynthRenderer.DrawToggle(
+                oscillatorEnabledBounds,
+                "Enabled",
+                activeOscillator.Enabled,
+                _accentColor,
+                _accentSoftColor,
+                _borderColor,
+                _panelColor,
+                _textColor,
+                _mutedTextColor);
+
+            activeOscillator.Waveform = SynthRenderer.DrawWaveformButtons(layout.WaveformButtonsArea, activeOscillator.Waveform, activeOscillator.Enabled, mousePosition, mousePressed, _panelColor, _borderColor, _accentSoftColor, _accentStrongColor, _textColor);
+
+            activeOscillator.Gain = SynthRenderer.DrawSlider(
             index: 0,
             activeSlider: ref _activeSlider,
             enabled: activeOscillator.Enabled,
@@ -215,7 +234,7 @@ internal sealed class TinySynthController
             textColor: _textColor,
             mutedTextColor: _mutedTextColor);
 
-        activeOscillator.DetuneCents = SynthRenderer.DrawSlider(
+            activeOscillator.DetuneCents = SynthRenderer.DrawSlider(
             index: 1,
             activeSlider: ref _activeSlider,
             enabled: activeOscillator.Enabled,
@@ -235,7 +254,7 @@ internal sealed class TinySynthController
             textColor: _textColor,
             mutedTextColor: _mutedTextColor);
 
-        activeOscillator.GlideSeconds = SynthRenderer.DrawSlider(
+            activeOscillator.GlideSeconds = SynthRenderer.DrawSlider(
             index: 2,
             activeSlider: ref _activeSlider,
             enabled: activeOscillator.Enabled,
@@ -255,7 +274,7 @@ internal sealed class TinySynthController
             textColor: _textColor,
             mutedTextColor: _mutedTextColor);
 
-        activeOscillator.VibratoDepthCents = SynthRenderer.DrawSlider(
+            activeOscillator.VibratoDepthCents = SynthRenderer.DrawSlider(
             index: 3,
             activeSlider: ref _activeSlider,
             enabled: activeOscillator.Enabled,
@@ -275,7 +294,7 @@ internal sealed class TinySynthController
             textColor: _textColor,
             mutedTextColor: _mutedTextColor);
 
-        activeOscillator.VibratoRateHz = SynthRenderer.DrawSlider(
+            activeOscillator.VibratoRateHz = SynthRenderer.DrawSlider(
             index: 4,
             activeSlider: ref _activeSlider,
             enabled: activeOscillator.Enabled,
@@ -295,7 +314,7 @@ internal sealed class TinySynthController
             textColor: _textColor,
             mutedTextColor: _mutedTextColor);
 
-        activeOscillator.AttackSeconds = SynthRenderer.DrawSlider(
+            activeOscillator.AttackSeconds = SynthRenderer.DrawSlider(
             index: 5,
             activeSlider: ref _activeSlider,
             enabled: activeOscillator.Enabled,
@@ -315,7 +334,7 @@ internal sealed class TinySynthController
             textColor: _textColor,
             mutedTextColor: _mutedTextColor);
 
-        activeOscillator.DecaySeconds = SynthRenderer.DrawSlider(
+            activeOscillator.DecaySeconds = SynthRenderer.DrawSlider(
             index: 6,
             activeSlider: ref _activeSlider,
             enabled: activeOscillator.Enabled,
@@ -335,7 +354,7 @@ internal sealed class TinySynthController
             textColor: _textColor,
             mutedTextColor: _mutedTextColor);
 
-        activeOscillator.SustainLevel = SynthRenderer.DrawSlider(
+            activeOscillator.SustainLevel = SynthRenderer.DrawSlider(
             index: 7,
             activeSlider: ref _activeSlider,
             enabled: activeOscillator.Enabled,
@@ -355,7 +374,7 @@ internal sealed class TinySynthController
             textColor: _textColor,
             mutedTextColor: _mutedTextColor);
 
-        activeOscillator.ReleaseSeconds = SynthRenderer.DrawSlider(
+            activeOscillator.ReleaseSeconds = SynthRenderer.DrawSlider(
             index: 8,
             activeSlider: ref _activeSlider,
             enabled: activeOscillator.Enabled,
@@ -374,6 +393,52 @@ internal sealed class TinySynthController
             panelColor: _panelColor,
             textColor: _textColor,
             mutedTextColor: _mutedTextColor);
+        }
+        else
+        {
+            Graphics.DrawText("Filter routing", (int)controlPanel.X + 20, (int)controlPanel.Y + 138, 18, _mutedTextColor);
+            _synthParameters.FilterType = SynthRenderer.DrawFilterButtons(layout.FilterButtonsArea, _synthParameters.FilterType, mousePosition, mousePressed, _panelColor, _borderColor, _accentSoftColor, _accentStrongColor, _textColor);
+
+            _synthParameters.FilterCutoffHz = SynthRenderer.DrawSlider(
+                index: 10,
+                activeSlider: ref _activeSlider,
+                enabled: _synthParameters.FilterType != FilterType.Off,
+                label: "Cutoff",
+                valueLabel: $"{_synthParameters.FilterCutoffHz:0} Hz",
+                bounds: new Rectangle(controlPanel.X + 20, filterSliderY, filterSliderWidth, 20),
+                value: _synthParameters.FilterCutoffHz,
+                minValue: 20f,
+                maxValue: 18_000f,
+                mousePosition: mousePosition,
+                mousePressed: mousePressed,
+                mouseDown: mouseDown,
+                accentColor: _accentColor,
+                accentSoftColor: _accentSoftColor,
+                borderColor: _borderColor,
+                panelColor: _panelColor,
+                textColor: _textColor,
+                mutedTextColor: _mutedTextColor);
+
+            _synthParameters.FilterResonance = SynthRenderer.DrawSlider(
+                index: 11,
+                activeSlider: ref _activeSlider,
+                enabled: _synthParameters.FilterType != FilterType.Off,
+                label: "Resonance",
+                valueLabel: $"{_synthParameters.FilterResonance:0.00}",
+                bounds: new Rectangle(controlPanel.X + 20 + filterSliderWidth + 18, filterSliderY, filterSliderWidth, 20),
+                value: _synthParameters.FilterResonance,
+                minValue: 0.00f,
+                maxValue: 1.00f,
+                mousePosition: mousePosition,
+                mousePressed: mousePressed,
+                mouseDown: mouseDown,
+                accentColor: _accentColor,
+                accentSoftColor: _accentSoftColor,
+                borderColor: _borderColor,
+                panelColor: _panelColor,
+                textColor: _textColor,
+                mutedTextColor: _mutedTextColor);
+        }
 
         int displayMidiNote = _synthEngine.DisplayMidiNote;
         string noteStatus = displayMidiNote >= 0

@@ -7,6 +7,10 @@ internal sealed class SynthVoice
     private readonly OscillatorState[] _oscillators;
 
     private int _activeOscillatorCount;
+    private float _filterInput1;
+    private float _filterInput2;
+    private float _filterOutput1;
+    private float _filterOutput2;
 
     public SynthVoice(int sampleRate, float masterGain, int defaultMidiNote)
     {
@@ -68,6 +72,11 @@ internal sealed class SynthVoice
 
             oscillator.ReleaseElapsed = 0f;
             oscillator.ReleaseStartLevel = 0f;
+        }
+
+        if (!isAudible || forceRestart)
+        {
+            ResetFilterState();
         }
 
         EnvelopeStage = HasEnabledOscillator(parameters) ? EnvelopeStage.Attack : EnvelopeStage.Idle;
@@ -148,7 +157,84 @@ internal sealed class SynthVoice
             return 0f;
         }
 
-        return (sample / MathF.Sqrt(enabledOscillatorCount)) * _masterGain;
+        sample /= MathF.Sqrt(enabledOscillatorCount);
+        sample = ProcessFilter(sample, parameters);
+
+        return sample * _masterGain;
+    }
+
+    private float ProcessFilter(float inputSample, SynthParameters parameters)
+    {
+        if (parameters.FilterType == FilterType.Off)
+        {
+            return inputSample;
+        }
+
+        float cutoffHz = Math.Clamp(parameters.FilterCutoffHz, 20f, _sampleRate * 0.45f);
+        float resonance = Math.Clamp(parameters.FilterResonance, 0f, 1f);
+        float q = 0.707f + ((12f - 0.707f) * resonance);
+        float omega = MathF.Tau * cutoffHz / _sampleRate;
+        float sinOmega = MathF.Sin(omega);
+        float cosOmega = MathF.Cos(omega);
+        float alpha = sinOmega / (2f * q);
+
+        float b0;
+        float b1;
+        float b2;
+        float a0 = 1f + alpha;
+        float a1 = -2f * cosOmega;
+        float a2 = 1f - alpha;
+
+        switch (parameters.FilterType)
+        {
+            case FilterType.LowPass:
+                b0 = (1f - cosOmega) * 0.5f;
+                b1 = 1f - cosOmega;
+                b2 = (1f - cosOmega) * 0.5f;
+                break;
+
+            case FilterType.HighPass:
+                b0 = (1f + cosOmega) * 0.5f;
+                b1 = -(1f + cosOmega);
+                b2 = (1f + cosOmega) * 0.5f;
+                break;
+
+            case FilterType.BandPass:
+                b0 = alpha;
+                b1 = 0f;
+                b2 = -alpha;
+                break;
+
+            default:
+                return inputSample;
+        }
+
+        float normalizedB0 = b0 / a0;
+        float normalizedB1 = b1 / a0;
+        float normalizedB2 = b2 / a0;
+        float normalizedA1 = a1 / a0;
+        float normalizedA2 = a2 / a0;
+
+        float outputSample = (normalizedB0 * inputSample)
+            + (normalizedB1 * _filterInput1)
+            + (normalizedB2 * _filterInput2)
+            - (normalizedA1 * _filterOutput1)
+            - (normalizedA2 * _filterOutput2);
+
+        _filterInput2 = _filterInput1;
+        _filterInput1 = inputSample;
+        _filterOutput2 = _filterOutput1;
+        _filterOutput1 = outputSample;
+
+        return outputSample;
+    }
+
+    private void ResetFilterState()
+    {
+        _filterInput1 = 0f;
+        _filterInput2 = 0f;
+        _filterOutput1 = 0f;
+        _filterOutput2 = 0f;
     }
 
     private void UpdateFrequency(float deltaTime, OscillatorState oscillator, OscillatorParameters parameters)

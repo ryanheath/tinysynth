@@ -99,6 +99,94 @@ internal static class SynthRenderer
         return currentValue;
     }
 
+    public static int DrawParameterSectionButtons(
+        Rectangle area,
+        int selectedIndex,
+        Vector2 mousePosition,
+        bool mousePressed,
+        Color panelColor,
+        Color borderColor,
+        Color selectedColor,
+        Color selectedBorderColor,
+        Color textColor)
+    {
+        string[] labels = ["Oscillator", "Filter"];
+        float buttonGap = 10f;
+        float buttonWidth = (area.Width - buttonGap) / labels.Length;
+
+        for (int i = 0; i < labels.Length; i++)
+        {
+            Rectangle buttonBounds = new(area.X + (i * (buttonWidth + buttonGap)), area.Y, buttonWidth, area.Height);
+            bool isSelected = selectedIndex == i;
+            bool isHovered = Contains(buttonBounds, mousePosition);
+            const int buttonFontSize = 18;
+            Color fill = isSelected ? selectedColor : (isHovered ? new Color(245, 248, 255, 255) : panelColor);
+            Color outline = isSelected ? selectedBorderColor : borderColor;
+
+            Graphics.DrawRectangleRec(buttonBounds, fill);
+            Graphics.DrawRectangleLinesEx(buttonBounds, isSelected ? 2.5f : 1f, outline);
+            int textWidth = TextManager.MeasureText(labels[i], buttonFontSize);
+            int textX = (int)(buttonBounds.X + ((buttonBounds.Width - textWidth) / 2f));
+            int textY = (int)(buttonBounds.Y + ((buttonBounds.Height - buttonFontSize) / 2f) - 1f);
+            Graphics.DrawText(labels[i], textX, textY, buttonFontSize, textColor);
+
+            if (mousePressed && isHovered)
+            {
+                selectedIndex = i;
+            }
+        }
+
+        return selectedIndex;
+    }
+
+    public static FilterType DrawFilterButtons(
+        Rectangle area,
+        FilterType currentValue,
+        Vector2 mousePosition,
+        bool mousePressed,
+        Color panelColor,
+        Color borderColor,
+        Color selectedColor,
+        Color selectedBorderColor,
+        Color textColor)
+    {
+        FilterType[] filterTypes = [FilterType.Off, FilterType.LowPass, FilterType.HighPass, FilterType.BandPass];
+        float buttonGap = 10f;
+        float buttonWidth = (area.Width - (buttonGap * (filterTypes.Length - 1))) / filterTypes.Length;
+
+        for (int i = 0; i < filterTypes.Length; i++)
+        {
+            Rectangle buttonBounds = new(area.X + (i * (buttonWidth + buttonGap)), area.Y, buttonWidth, area.Height);
+            bool isSelected = currentValue == filterTypes[i];
+            bool isHovered = Contains(buttonBounds, mousePosition);
+            string buttonLabel = filterTypes[i] switch
+            {
+                FilterType.Off => "Off",
+                FilterType.LowPass => "Low-pass",
+                FilterType.HighPass => "High-pass",
+                FilterType.BandPass => "Band-pass",
+                _ => filterTypes[i].ToString()
+            };
+            const int buttonFontSize = 18;
+            Color fill = isSelected ? selectedColor : (isHovered ? new Color(245, 248, 255, 255) : panelColor);
+            Color outline = isSelected ? selectedBorderColor : borderColor;
+
+            Graphics.DrawRectangleRec(buttonBounds, fill);
+            Graphics.DrawRectangleLinesEx(buttonBounds, isSelected ? 2.5f : 1f, outline);
+            int textWidth = TextManager.MeasureText(buttonLabel, buttonFontSize);
+            int textX = (int)(buttonBounds.X + ((buttonBounds.Width - textWidth) / 2f));
+            int textY = (int)(buttonBounds.Y + ((buttonBounds.Height - buttonFontSize) / 2f) - 1f);
+            Graphics.DrawText(buttonLabel, textX, textY, buttonFontSize, textColor);
+
+            if (mousePressed && isHovered)
+            {
+                currentValue = filterTypes[i];
+            }
+        }
+
+        return currentValue;
+    }
+
     public static float DrawSlider(
         int index,
         ref int activeSlider,
