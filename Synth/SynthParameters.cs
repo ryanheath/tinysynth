@@ -26,6 +26,22 @@ internal sealed class SynthParameters
 
     public float FilterLfoRateHz { get; set; } = 2.5f;
 
+    public ChorusType ChorusType { get; set; } = ChorusType.Off;
+
+    public float ChorusMix { get; set; } = 0f;
+
+    public float ChorusRateHz { get; set; } = 0.8f;
+
+    public float ChorusDepth { get; set; } = 0.35f;
+
+    public ReverbType ReverbType { get; set; } = ReverbType.Off;
+
+    public float ReverbMix { get; set; } = 0f;
+
+    public float ReverbSize { get; set; } = 0.45f;
+
+    public float ReverbDamping { get; set; } = 0.35f;
+
     public OscillatorParameters GetOscillator(int index)
     {
         return _oscillators[Math.Clamp(index, 0, _oscillators.Length - 1)];

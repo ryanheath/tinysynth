@@ -9,6 +9,8 @@ internal readonly record struct LayoutMetrics(
     Rectangle ModeButtonsArea,
     Rectangle OscillatorButtonsArea,
     Rectangle FilterButtonsArea,
+    Rectangle FxChorusButtonsArea,
+    Rectangle FxReverbButtonsArea,
     Rectangle FilterAnalysisArea,
     float SliderRowOneY,
     float SliderRowTwoY,
@@ -18,4 +20,8 @@ internal readonly record struct LayoutMetrics(
     float FilterSliderRowThreeY,
     float FilterSliderWidth,
     float FilterFullWidth,
-    Rectangle WaveformButtonsArea);
+    Rectangle WaveformButtonsArea,
+    float FxSliderY,
+    float FxSliderRowTwoY,
+    float FxSliderWidth,
+    float FxFullWidth);

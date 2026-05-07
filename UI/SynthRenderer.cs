@@ -110,9 +110,9 @@ internal static class SynthRenderer
         Color selectedBorderColor,
         Color textColor)
     {
-        string[] labels = ["Oscillator", "Filter"];
+        string[] labels = ["Oscillator", "Filter", "FX"];
         float buttonGap = 10f;
-        float buttonWidth = (area.Width - buttonGap) / labels.Length;
+        float buttonWidth = (area.Width - (buttonGap * (labels.Length - 1))) / labels.Length;
 
         for (int i = 0; i < labels.Length; i++)
         {
@@ -185,6 +185,36 @@ internal static class SynthRenderer
         }
 
         return currentValue;
+    }
+
+    public static ChorusType DrawChorusButtons(
+        Rectangle area,
+        ChorusType currentValue,
+        Vector2 mousePosition,
+        bool mousePressed,
+        Color panelColor,
+        Color borderColor,
+        Color selectedColor,
+        Color selectedBorderColor,
+        Color textColor)
+    {
+        ChorusType[] chorusTypes = [ChorusType.Off, ChorusType.Light, ChorusType.Ensemble, ChorusType.Wide];
+        return DrawEnumButtons(area, chorusTypes, currentValue, mousePosition, mousePressed, panelColor, borderColor, selectedColor, selectedBorderColor, textColor, static value => value.ToString());
+    }
+
+    public static ReverbType DrawReverbButtons(
+        Rectangle area,
+        ReverbType currentValue,
+        Vector2 mousePosition,
+        bool mousePressed,
+        Color panelColor,
+        Color borderColor,
+        Color selectedColor,
+        Color selectedBorderColor,
+        Color textColor)
+    {
+        ReverbType[] reverbTypes = [ReverbType.Off, ReverbType.Room, ReverbType.Hall, ReverbType.Shimmer];
+        return DrawEnumButtons(area, reverbTypes, currentValue, mousePosition, mousePressed, panelColor, borderColor, selectedColor, selectedBorderColor, textColor, static value => value.ToString());
     }
 
     public static float DrawSlider(
@@ -560,5 +590,48 @@ internal static class SynthRenderer
             && point.X <= bounds.X + bounds.Width
             && point.Y >= bounds.Y
             && point.Y <= bounds.Y + bounds.Height;
+    }
+
+    private static TEnum DrawEnumButtons<TEnum>(
+        Rectangle area,
+        ReadOnlySpan<TEnum> values,
+        TEnum currentValue,
+        Vector2 mousePosition,
+        bool mousePressed,
+        Color panelColor,
+        Color borderColor,
+        Color selectedColor,
+        Color selectedBorderColor,
+        Color textColor,
+        Func<TEnum, string> labelSelector)
+        where TEnum : struct, Enum
+    {
+        float buttonGap = 10f;
+        float buttonWidth = (area.Width - (buttonGap * (values.Length - 1))) / values.Length;
+
+        for (int i = 0; i < values.Length; i++)
+        {
+            Rectangle buttonBounds = new(area.X + (i * (buttonWidth + buttonGap)), area.Y, buttonWidth, area.Height);
+            bool isSelected = EqualityComparer<TEnum>.Default.Equals(currentValue, values[i]);
+            bool isHovered = Contains(buttonBounds, mousePosition);
+            string buttonLabel = labelSelector(values[i]);
+            const int buttonFontSize = 18;
+            Color fill = isSelected ? selectedColor : (isHovered ? new Color(245, 248, 255, 255) : panelColor);
+            Color outline = isSelected ? selectedBorderColor : borderColor;
+
+            Graphics.DrawRectangleRec(buttonBounds, fill);
+            Graphics.DrawRectangleLinesEx(buttonBounds, isSelected ? 2.5f : 1f, outline);
+            int textWidth = TextManager.MeasureText(buttonLabel, buttonFontSize);
+            int textX = (int)(buttonBounds.X + ((buttonBounds.Width - textWidth) / 2f));
+            int textY = (int)(buttonBounds.Y + ((buttonBounds.Height - buttonFontSize) / 2f) - 1f);
+            Graphics.DrawText(buttonLabel, textX, textY, buttonFontSize, textColor);
+
+            if (mousePressed && isHovered)
+            {
+                currentValue = values[i];
+            }
+        }
+
+        return currentValue;
     }
 }

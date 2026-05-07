@@ -14,7 +14,8 @@ namespace TinySynth.App;
 internal enum ParameterSection
 {
     Oscillator,
-    Filter
+    Filter,
+    Fx
 }
 
 internal sealed class TinySynthController
@@ -146,6 +147,10 @@ internal sealed class TinySynthController
         float filterSliderRowThreeY = layout.FilterSliderRowThreeY;
         float filterSliderWidth = layout.FilterSliderWidth;
         float filterFullWidth = layout.FilterFullWidth;
+        float fxSliderY = layout.FxSliderY;
+        float fxSliderRowTwoY = layout.FxSliderRowTwoY;
+        float fxSliderWidth = layout.FxSliderWidth;
+        float fxFullWidth = layout.FxFullWidth;
         float maxFilterCutoffHz = MathF.Max(20f, _sampleRate * 0.45f);
         Rectangle filterAnalysisArea = layout.FilterAnalysisArea;
         Rectangle holdPedalBounds = new(keyboardPanel.X + keyboardPanel.Width - 190, keyboardPanel.Y + 12, 192, 24);
@@ -402,7 +407,7 @@ internal sealed class TinySynthController
             mutedTextColor: _mutedTextColor);
 
         }
-        else
+        else if (_activeParameterSection == ParameterSection.Filter)
         {
             Graphics.DrawText("Filter routing", (int)controlPanel.X + 20, (int)controlPanel.Y + 138, 18, _mutedTextColor);
             _synthParameters.FilterType = SynthRenderer.DrawFilterButtons(layout.FilterButtonsArea, _synthParameters.FilterType, mousePosition, mousePressed, _panelColor, _borderColor, _accentSoftColor, _accentStrongColor, _textColor);
@@ -523,6 +528,139 @@ internal sealed class TinySynthController
                 responseColor: _accentColor,
                 borderColor: _borderColor,
                 labelColor: _mutedTextColor);
+        }
+        else
+        {
+            float fxRightColumnX = controlPanel.X + 20 + fxSliderWidth + 24f;
+
+            Graphics.DrawText("Chorus type", (int)controlPanel.X + 20, (int)controlPanel.Y + 138, 18, _mutedTextColor);
+            _synthParameters.ChorusType = SynthRenderer.DrawChorusButtons(layout.FxChorusButtonsArea, _synthParameters.ChorusType, mousePosition, mousePressed, _panelColor, _borderColor, _accentSoftColor, _accentStrongColor, _textColor);
+
+            Graphics.DrawText("Reverb type", (int)fxRightColumnX, (int)controlPanel.Y + 138, 18, _mutedTextColor);
+            _synthParameters.ReverbType = SynthRenderer.DrawReverbButtons(layout.FxReverbButtonsArea, _synthParameters.ReverbType, mousePosition, mousePressed, _panelColor, _borderColor, _accentSoftColor, _accentStrongColor, _textColor);
+
+            bool chorusEnabled = _synthParameters.ChorusType != ChorusType.Off;
+            bool reverbEnabled = _synthParameters.ReverbType != ReverbType.Off;
+
+            _synthParameters.ChorusMix = SynthRenderer.DrawSlider(
+                index: 15,
+                activeSlider: ref _activeSlider,
+                enabled: chorusEnabled,
+                label: "Chorus mix",
+                valueLabel: $"{(_synthParameters.ChorusMix * 100f):0}%",
+                bounds: new Rectangle(controlPanel.X + 20, fxSliderY, fxSliderWidth, 20),
+                value: _synthParameters.ChorusMix,
+                minValue: 0.00f,
+                maxValue: 1.00f,
+                mousePosition: mousePosition,
+                mousePressed: mousePressed,
+                mouseDown: mouseDown,
+                accentColor: _accentColor,
+                accentSoftColor: _accentSoftColor,
+                borderColor: _borderColor,
+                panelColor: _panelColor,
+                textColor: _textColor,
+                mutedTextColor: _mutedTextColor);
+
+            _synthParameters.ChorusRateHz = SynthRenderer.DrawSlider(
+                index: 16,
+                activeSlider: ref _activeSlider,
+                enabled: chorusEnabled,
+                label: "Chorus rate",
+                valueLabel: $"{_synthParameters.ChorusRateHz:0.0}Hz",
+                bounds: new Rectangle(controlPanel.X + 20, fxSliderRowTwoY, fxSliderWidth, 20),
+                value: _synthParameters.ChorusRateHz,
+                minValue: 0.10f,
+                maxValue: 3.50f,
+                mousePosition: mousePosition,
+                mousePressed: mousePressed,
+                mouseDown: mouseDown,
+                accentColor: _accentColor,
+                accentSoftColor: _accentSoftColor,
+                borderColor: _borderColor,
+                panelColor: _panelColor,
+                textColor: _textColor,
+                mutedTextColor: _mutedTextColor);
+
+            _synthParameters.ChorusDepth = SynthRenderer.DrawSlider(
+                index: 17,
+                activeSlider: ref _activeSlider,
+                enabled: chorusEnabled,
+                label: "Chorus depth",
+                valueLabel: $"{_synthParameters.ChorusDepth:0.00}",
+                bounds: new Rectangle(controlPanel.X + 20, fxSliderRowTwoY + 56, fxSliderWidth, 20),
+                value: _synthParameters.ChorusDepth,
+                minValue: 0.05f,
+                maxValue: 1.00f,
+                mousePosition: mousePosition,
+                mousePressed: mousePressed,
+                mouseDown: mouseDown,
+                accentColor: _accentColor,
+                accentSoftColor: _accentSoftColor,
+                borderColor: _borderColor,
+                panelColor: _panelColor,
+                textColor: _textColor,
+                mutedTextColor: _mutedTextColor);
+
+            _synthParameters.ReverbMix = SynthRenderer.DrawSlider(
+                index: 18,
+                activeSlider: ref _activeSlider,
+                enabled: reverbEnabled,
+                label: "Reverb mix",
+                valueLabel: $"{(_synthParameters.ReverbMix * 100f):0}%",
+                bounds: new Rectangle(fxRightColumnX, fxSliderY, fxSliderWidth, 20),
+                value: _synthParameters.ReverbMix,
+                minValue: 0.00f,
+                maxValue: 1.00f,
+                mousePosition: mousePosition,
+                mousePressed: mousePressed,
+                mouseDown: mouseDown,
+                accentColor: _accentColor,
+                accentSoftColor: _accentSoftColor,
+                borderColor: _borderColor,
+                panelColor: _panelColor,
+                textColor: _textColor,
+                mutedTextColor: _mutedTextColor);
+
+            _synthParameters.ReverbSize = SynthRenderer.DrawSlider(
+                index: 19,
+                activeSlider: ref _activeSlider,
+                enabled: reverbEnabled,
+                label: "Reverb size",
+                valueLabel: $"{_synthParameters.ReverbSize:0.00}",
+                bounds: new Rectangle(fxRightColumnX, fxSliderRowTwoY, fxSliderWidth, 20),
+                value: _synthParameters.ReverbSize,
+                minValue: 0.10f,
+                maxValue: 1.00f,
+                mousePosition: mousePosition,
+                mousePressed: mousePressed,
+                mouseDown: mouseDown,
+                accentColor: _accentColor,
+                accentSoftColor: _accentSoftColor,
+                borderColor: _borderColor,
+                panelColor: _panelColor,
+                textColor: _textColor,
+                mutedTextColor: _mutedTextColor);
+
+            _synthParameters.ReverbDamping = SynthRenderer.DrawSlider(
+                index: 20,
+                activeSlider: ref _activeSlider,
+                enabled: reverbEnabled,
+                label: "Reverb damp",
+                valueLabel: $"{_synthParameters.ReverbDamping:0.00}",
+                bounds: new Rectangle(fxRightColumnX, fxSliderRowTwoY + 56, fxSliderWidth, 20),
+                value: _synthParameters.ReverbDamping,
+                minValue: 0.00f,
+                maxValue: 1.00f,
+                mousePosition: mousePosition,
+                mousePressed: mousePressed,
+                mouseDown: mouseDown,
+                accentColor: _accentColor,
+                accentSoftColor: _accentSoftColor,
+                borderColor: _borderColor,
+                panelColor: _panelColor,
+                textColor: _textColor,
+                mutedTextColor: _mutedTextColor);
         }
 
         int displayMidiNote = _synthEngine.DisplayMidiNote;
