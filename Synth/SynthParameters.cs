@@ -2,6 +2,28 @@ namespace TinySynth.Synth;
 
 internal sealed class SynthParameters
 {
+    public const int OscillatorCount = 4;
+
+    private readonly OscillatorParameters[] _oscillators =
+    [
+        new(),
+        new(),
+        new(),
+        new()
+    ];
+
+    public IReadOnlyList<OscillatorParameters> Oscillators => _oscillators;
+
+    public OscillatorParameters GetOscillator(int index)
+    {
+        return _oscillators[Math.Clamp(index, 0, _oscillators.Length - 1)];
+    }
+}
+
+internal sealed class OscillatorParameters
+{
+    public bool Enabled { get; set; } = true;
+
     public Waveform Waveform { get; set; } = Waveform.Sine;
 
     public float Gain { get; set; } = 0.80f;

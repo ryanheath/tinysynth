@@ -6,6 +6,7 @@ internal readonly record struct LayoutMetrics(
     Rectangle ControlPanel,
     Rectangle WaveformPanel,
     Rectangle KeyboardPanel,
+    Rectangle OscillatorButtonsArea,
     float SliderRowOneY,
     float SliderRowTwoY,
     float SliderWidth,

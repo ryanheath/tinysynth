@@ -4,51 +4,73 @@ internal sealed class SynthVoice
 {
     private readonly int _sampleRate;
     private readonly float _masterGain;
+    private readonly OscillatorState[] _oscillators;
 
-    private float _envelopeLevel;
-    private float _releaseStartLevel;
-    private float _releaseElapsed;
-    private float _oscillatorPhase;
-    private float _currentFrequency;
-    private float _targetFrequency;
-    private float _vibratoPhase;
+    private int _activeOscillatorCount;
 
     public SynthVoice(int sampleRate, float masterGain, int defaultMidiNote)
     {
         _sampleRate = sampleRate;
         _masterGain = masterGain;
+        _oscillators = new OscillatorState[SynthParameters.OscillatorCount];
 
         float defaultFrequency = MidiUtilities.MidiToFrequency(defaultMidiNote);
-        _currentFrequency = defaultFrequency;
-        _targetFrequency = defaultFrequency;
+
+        for (int i = 0; i < _oscillators.Length; i++)
+        {
+            _oscillators[i] = new OscillatorState(defaultFrequency);
+        }
     }
 
     public EnvelopeStage EnvelopeStage { get; private set; } = EnvelopeStage.Idle;
 
     public bool IsIdle => EnvelopeStage == EnvelopeStage.Idle;
 
-    public float CurrentFrequency => _currentFrequency;
+    public float CurrentFrequency => _activeOscillatorCount == 0 ? 0f : _oscillators[0].CurrentFrequency;
 
     public int ActiveMidiNote { get; private set; } = -1;
 
     public void StartNote(int midiNote, SynthParameters parameters, bool forceRestart = false)
     {
-        bool isAudible = EnvelopeStage != EnvelopeStage.Idle && _envelopeLevel > 0f;
+        bool isAudible = EnvelopeStage != EnvelopeStage.Idle && HasAudibleOscillator();
+        float noteFrequency = MidiUtilities.MidiToFrequency(midiNote);
 
         ActiveMidiNote = midiNote;
-        _targetFrequency = ApplyDetune(MidiUtilities.MidiToFrequency(midiNote), parameters.DetuneCents);
+        _activeOscillatorCount = parameters.Oscillators.Count;
 
-        if (!isAudible || forceRestart)
+        for (int i = 0; i < _activeOscillatorCount; i++)
         {
-            _oscillatorPhase = 0f;
-            _vibratoPhase = 0f;
-            _envelopeLevel = 0f;
-            _currentFrequency = _targetFrequency;
+            OscillatorParameters oscillatorParameters = parameters.GetOscillator(i);
+            OscillatorState oscillator = _oscillators[i];
+
+            if (!oscillatorParameters.Enabled)
+            {
+                oscillator.EnvelopeLevel = 0f;
+                oscillator.ReleaseElapsed = 0f;
+                oscillator.ReleaseStartLevel = 0f;
+                continue;
+            }
+
+            oscillator.TargetFrequency = ApplyDetune(noteFrequency, oscillatorParameters.DetuneCents);
+
+            if (!isAudible || forceRestart)
+            {
+                oscillator.Phase = 0f;
+                oscillator.VibratoPhase = 0f;
+                oscillator.EnvelopeLevel = 0f;
+                oscillator.CurrentFrequency = oscillator.TargetFrequency;
+            }
+
+            oscillator.ReleaseElapsed = 0f;
+            oscillator.ReleaseStartLevel = 0f;
         }
 
-        _releaseElapsed = 0f;
-        _releaseStartLevel = 0f;
-        EnvelopeStage = EnvelopeStage.Attack;
+        EnvelopeStage = HasEnabledOscillator(parameters) ? EnvelopeStage.Attack : EnvelopeStage.Idle;
+
+        if (EnvelopeStage == EnvelopeStage.Idle)
+        {
+            ActiveMidiNote = -1;
+        }
     }
 
     public void ReleaseNote()
@@ -58,8 +80,13 @@ internal sealed class SynthVoice
             return;
         }
 
-        _releaseStartLevel = _envelopeLevel;
-        _releaseElapsed = 0f;
+        for (int i = 0; i < _activeOscillatorCount; i++)
+        {
+            OscillatorState oscillator = _oscillators[i];
+            oscillator.ReleaseStartLevel = oscillator.EnvelopeLevel;
+            oscillator.ReleaseElapsed = 0f;
+        }
+
         EnvelopeStage = EnvelopeStage.Release;
     }
 
@@ -73,61 +100,242 @@ internal sealed class SynthVoice
 
     private float NextSample(SynthParameters parameters)
     {
-        float deltaTime = 1f / _sampleRate;
-        UpdateEnvelope(deltaTime, parameters);
-        UpdateFrequency(deltaTime, parameters);
-
         if (EnvelopeStage == EnvelopeStage.Idle || ActiveMidiNote < 0)
         {
             return 0f;
         }
 
-        float effectiveFrequency = ApplyVibrato(_currentFrequency, deltaTime, parameters);
+        float deltaTime = 1f / _sampleRate;
+        float sample = 0f;
+        int audibleOscillatorCount = 0;
 
-        float sample = parameters.Waveform switch
+        for (int i = 0; i < _activeOscillatorCount; i++)
         {
-            Waveform.Sine => MathF.Sin(_oscillatorPhase * MathF.Tau),
-            Waveform.Square => _oscillatorPhase < 0.5f ? 1f : -1f,
-            Waveform.Saw => (2f * _oscillatorPhase) - 1f,
-            Waveform.Triangle => 1f - (4f * MathF.Abs(_oscillatorPhase - 0.5f)),
-            _ => 0f
-        };
+            OscillatorParameters oscillatorParameters = parameters.GetOscillator(i);
+            if (!oscillatorParameters.Enabled)
+            {
+                continue;
+            }
 
-        _oscillatorPhase += effectiveFrequency / _sampleRate;
-        _oscillatorPhase -= MathF.Floor(_oscillatorPhase);
+            OscillatorState oscillator = _oscillators[i];
 
-        return sample * parameters.Gain * _envelopeLevel * _masterGain;
+            UpdateEnvelope(deltaTime, oscillator, oscillatorParameters);
+            UpdateFrequency(deltaTime, oscillator, oscillatorParameters);
+
+            if (oscillator.EnvelopeLevel <= 0f && EnvelopeStage == EnvelopeStage.Release)
+            {
+                continue;
+            }
+
+            float effectiveFrequency = ApplyVibrato(oscillator.CurrentFrequency, deltaTime, oscillator, oscillatorParameters);
+            float oscillatorSample = GetWaveSample(oscillator.Phase, oscillatorParameters.Waveform);
+
+            sample += oscillatorSample * oscillatorParameters.Gain * oscillator.EnvelopeLevel;
+            AdvancePhase(oscillator, effectiveFrequency);
+            audibleOscillatorCount++;
+        }
+
+        RefreshEnvelopeStage(parameters);
+
+        if (EnvelopeStage == EnvelopeStage.Idle || audibleOscillatorCount == 0)
+        {
+            return 0f;
+        }
+
+        return (sample / MathF.Sqrt(audibleOscillatorCount)) * _masterGain;
     }
 
-    private void UpdateFrequency(float deltaTime, SynthParameters parameters)
+    private void UpdateFrequency(float deltaTime, OscillatorState oscillator, OscillatorParameters parameters)
     {
         if (ActiveMidiNote >= 0)
         {
-            _targetFrequency = ApplyDetune(MidiUtilities.MidiToFrequency(ActiveMidiNote), parameters.DetuneCents);
+            oscillator.TargetFrequency = ApplyDetune(MidiUtilities.MidiToFrequency(ActiveMidiNote), parameters.DetuneCents);
         }
 
         if (parameters.GlideSeconds <= 0.001f)
         {
-            _currentFrequency = _targetFrequency;
+            oscillator.CurrentFrequency = oscillator.TargetFrequency;
             return;
         }
 
         float glideFactor = MathF.Min(deltaTime / parameters.GlideSeconds, 1f);
-        _currentFrequency += (_targetFrequency - _currentFrequency) * glideFactor;
+        oscillator.CurrentFrequency += (oscillator.TargetFrequency - oscillator.CurrentFrequency) * glideFactor;
     }
 
-    private float ApplyVibrato(float baseFrequency, float deltaTime, SynthParameters parameters)
+    private void UpdateEnvelope(float deltaTime, OscillatorState oscillator, OscillatorParameters parameters)
+    {
+        switch (EnvelopeStage)
+        {
+            case EnvelopeStage.Idle:
+                oscillator.EnvelopeLevel = 0f;
+                break;
+
+            case EnvelopeStage.Attack:
+                oscillator.EnvelopeLevel += deltaTime / MathF.Max(parameters.AttackSeconds, 0.0001f);
+                oscillator.EnvelopeLevel = MathF.Min(oscillator.EnvelopeLevel, 1f);
+                break;
+
+            case EnvelopeStage.Decay:
+                if (parameters.DecaySeconds <= 0.01f)
+                {
+                    oscillator.EnvelopeLevel = parameters.SustainLevel;
+                }
+                else
+                {
+                    oscillator.EnvelopeLevel -= ((1f - parameters.SustainLevel) / parameters.DecaySeconds) * deltaTime;
+                    oscillator.EnvelopeLevel = MathF.Max(oscillator.EnvelopeLevel, parameters.SustainLevel);
+                }
+                break;
+
+            case EnvelopeStage.Sustain:
+                oscillator.EnvelopeLevel = parameters.SustainLevel;
+                break;
+
+            case EnvelopeStage.Release:
+                oscillator.ReleaseElapsed += deltaTime;
+
+                if (parameters.ReleaseSeconds <= 0.01f || oscillator.ReleaseElapsed >= parameters.ReleaseSeconds)
+                {
+                    oscillator.EnvelopeLevel = 0f;
+                }
+                else
+                {
+                    float releaseProgress = oscillator.ReleaseElapsed / parameters.ReleaseSeconds;
+                    oscillator.EnvelopeLevel = oscillator.ReleaseStartLevel * (1f - releaseProgress);
+                }
+
+                break;
+        }
+    }
+
+    private void RefreshEnvelopeStage(SynthParameters parameters)
+    {
+        if (!HasEnabledOscillator(parameters))
+        {
+            ActiveMidiNote = -1;
+            EnvelopeStage = EnvelopeStage.Idle;
+            return;
+        }
+
+        if (EnvelopeStage == EnvelopeStage.Release)
+        {
+            if (AreAllOscillatorsAtOrBelow(0f))
+            {
+                ActiveMidiNote = -1;
+                EnvelopeStage = EnvelopeStage.Idle;
+            }
+
+            return;
+        }
+
+        if (EnvelopeStage == EnvelopeStage.Attack)
+        {
+            if (AreAllOscillatorsAtOrAbove(1f))
+            {
+                EnvelopeStage = EnvelopeStage.Decay;
+            }
+
+            return;
+        }
+
+        if (EnvelopeStage != EnvelopeStage.Decay)
+        {
+            return;
+        }
+
+        for (int i = 0; i < _activeOscillatorCount; i++)
+        {
+            if (_oscillators[i].EnvelopeLevel > parameters.GetOscillator(i).SustainLevel)
+            {
+                return;
+            }
+        }
+
+        EnvelopeStage = EnvelopeStage.Sustain;
+    }
+
+    private bool HasAudibleOscillator()
+    {
+        for (int i = 0; i < _activeOscillatorCount; i++)
+        {
+            if (_oscillators[i].EnvelopeLevel > 0f)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool HasEnabledOscillator(SynthParameters parameters)
+    {
+        for (int i = 0; i < _activeOscillatorCount; i++)
+        {
+            if (parameters.GetOscillator(i).Enabled)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool AreAllOscillatorsAtOrBelow(float value)
+    {
+        for (int i = 0; i < _activeOscillatorCount; i++)
+        {
+            if (_oscillators[i].EnvelopeLevel > value)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private bool AreAllOscillatorsAtOrAbove(float value)
+    {
+        for (int i = 0; i < _activeOscillatorCount; i++)
+        {
+            if (_oscillators[i].EnvelopeLevel < value)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private float ApplyVibrato(float baseFrequency, float deltaTime, OscillatorState oscillator, OscillatorParameters parameters)
     {
         if (parameters.VibratoDepthCents <= 0f || parameters.VibratoRateHz <= 0f)
         {
             return baseFrequency;
         }
 
-        _vibratoPhase += parameters.VibratoRateHz * deltaTime;
-        _vibratoPhase -= MathF.Floor(_vibratoPhase);
+        oscillator.VibratoPhase += parameters.VibratoRateHz * deltaTime;
+        oscillator.VibratoPhase -= MathF.Floor(oscillator.VibratoPhase);
 
-        float vibratoCents = MathF.Sin(_vibratoPhase * MathF.Tau) * parameters.VibratoDepthCents;
+        float vibratoCents = MathF.Sin(oscillator.VibratoPhase * MathF.Tau) * parameters.VibratoDepthCents;
         return ApplyDetune(baseFrequency, vibratoCents);
+    }
+
+    private static float GetWaveSample(float phase, Waveform waveform)
+    {
+        return waveform switch
+        {
+            Waveform.Sine => MathF.Sin(phase * MathF.Tau),
+            Waveform.Square => phase < 0.5f ? 1f : -1f,
+            Waveform.Saw => (2f * phase) - 1f,
+            Waveform.Triangle => 1f - (4f * MathF.Abs(phase - 0.5f)),
+            _ => 0f
+        };
+    }
+
+    private void AdvancePhase(OscillatorState oscillator, float frequency)
+    {
+        oscillator.Phase += frequency / _sampleRate;
+        oscillator.Phase -= MathF.Floor(oscillator.Phase);
     }
 
     private static float ApplyDetune(float frequency, float cents)
@@ -135,58 +343,26 @@ internal sealed class SynthVoice
         return frequency * MathF.Pow(2f, cents / 1200f);
     }
 
-    private void UpdateEnvelope(float deltaTime, SynthParameters parameters)
+    private sealed class OscillatorState
     {
-        switch (EnvelopeStage)
+        public OscillatorState(float defaultFrequency)
         {
-            case EnvelopeStage.Idle:
-                _envelopeLevel = 0f;
-                break;
-
-            case EnvelopeStage.Attack:
-                _envelopeLevel += deltaTime / MathF.Max(parameters.AttackSeconds, 0.0001f);
-                if (_envelopeLevel >= 1f)
-                {
-                    _envelopeLevel = 1f;
-                    EnvelopeStage = EnvelopeStage.Decay;
-                }
-                break;
-
-            case EnvelopeStage.Decay:
-                if (parameters.DecaySeconds <= 0.01f)
-                {
-                    _envelopeLevel = parameters.SustainLevel;
-                    EnvelopeStage = EnvelopeStage.Sustain;
-                }
-                else
-                {
-                    _envelopeLevel -= ((1f - parameters.SustainLevel) / parameters.DecaySeconds) * deltaTime;
-                    if (_envelopeLevel <= parameters.SustainLevel)
-                    {
-                        _envelopeLevel = parameters.SustainLevel;
-                        EnvelopeStage = EnvelopeStage.Sustain;
-                    }
-                }
-                break;
-
-            case EnvelopeStage.Sustain:
-                _envelopeLevel = parameters.SustainLevel;
-                break;
-
-            case EnvelopeStage.Release:
-                _releaseElapsed += deltaTime;
-                if (parameters.ReleaseSeconds <= 0.01f || _releaseElapsed >= parameters.ReleaseSeconds)
-                {
-                    _envelopeLevel = 0f;
-                    ActiveMidiNote = -1;
-                    EnvelopeStage = EnvelopeStage.Idle;
-                }
-                else
-                {
-                    float releaseProgress = _releaseElapsed / parameters.ReleaseSeconds;
-                    _envelopeLevel = _releaseStartLevel * (1f - releaseProgress);
-                }
-                break;
+            CurrentFrequency = defaultFrequency;
+            TargetFrequency = defaultFrequency;
         }
+
+        public float CurrentFrequency { get; set; }
+
+        public float TargetFrequency { get; set; }
+
+        public float Phase { get; set; }
+
+        public float VibratoPhase { get; set; }
+
+        public float EnvelopeLevel { get; set; }
+
+        public float ReleaseStartLevel { get; set; }
+
+        public float ReleaseElapsed { get; set; }
     }
 }

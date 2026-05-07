@@ -8,9 +8,53 @@ namespace TinySynth.UI;
 
 internal static class SynthRenderer
 {
+    public static int DrawOscillatorButtons(
+        Rectangle area,
+        IReadOnlyList<OscillatorParameters> oscillators,
+        int activeOscillatorIndex,
+        Vector2 mousePosition,
+        bool mousePressed,
+        Color panelColor,
+        Color borderColor,
+        Color selectedColor,
+        Color selectedBorderColor,
+        Color textColor)
+    {
+        float buttonGap = 10f;
+        float buttonWidth = (area.Width - (buttonGap * (SynthParameters.OscillatorCount - 1))) / SynthParameters.OscillatorCount;
+
+        for (int i = 0; i < SynthParameters.OscillatorCount; i++)
+        {
+            Rectangle buttonBounds = new(area.X + (i * (buttonWidth + buttonGap)), area.Y, buttonWidth, area.Height);
+            bool isEnabled = oscillators[i].Enabled;
+            bool isSelected = activeOscillatorIndex == i;
+            bool isHovered = Contains(buttonBounds, mousePosition);
+            Color fill = isEnabled
+                ? (isSelected ? selectedColor : (isHovered ? new Color(245, 248, 255, 255) : panelColor))
+                : new Color(236, 239, 245, 255);
+            Color outline = isEnabled
+                ? (isSelected ? selectedBorderColor : borderColor)
+                : new Color(194, 201, 214, 255);
+            Color buttonTextColor = isEnabled ? textColor : new Color(134, 143, 160, 255);
+
+            Graphics.DrawRectangleRec(buttonBounds, fill);
+            Graphics.DrawRectangleLinesEx(buttonBounds, isSelected ? 2.5f : 1f, outline);
+            Graphics.DrawText($"Osc {i + 1}", (int)buttonBounds.X + 14, (int)buttonBounds.Y + 7, 18, buttonTextColor);
+            Graphics.DrawText(isEnabled ? "On" : "Off", (int)buttonBounds.X + 20, (int)buttonBounds.Y + 21, 12, buttonTextColor);
+
+            if (mousePressed && isHovered)
+            {
+                activeOscillatorIndex = i;
+            }
+        }
+
+        return activeOscillatorIndex;
+    }
+
     public static Waveform DrawWaveformButtons(
         Rectangle area,
         Waveform currentValue,
+        bool enabled,
         Vector2 mousePosition,
         bool mousePressed,
         Color panelColor,
@@ -28,14 +72,19 @@ internal static class SynthRenderer
             Rectangle buttonBounds = new(area.X + (i * (buttonWidth + buttonGap)), area.Y, buttonWidth, area.Height);
             bool isSelected = currentValue == waveforms[i];
             bool isHovered = Contains(buttonBounds, mousePosition);
-            Color fill = isSelected ? selectedColor : (isHovered ? new Color(245, 248, 255, 255) : panelColor);
-            Color outline = isSelected ? selectedBorderColor : borderColor;
+            Color fill = enabled
+                ? (isSelected ? selectedColor : (isHovered ? new Color(245, 248, 255, 255) : panelColor))
+                : new Color(236, 239, 245, 255);
+            Color outline = enabled
+                ? (isSelected ? selectedBorderColor : borderColor)
+                : new Color(194, 201, 214, 255);
+            Color buttonTextColor = enabled ? textColor : new Color(134, 143, 160, 255);
 
             Graphics.DrawRectangleRec(buttonBounds, fill);
             Graphics.DrawRectangleLinesEx(buttonBounds, isSelected ? 2.5f : 1f, outline);
-            Graphics.DrawText(waveforms[i].ToString(), (int)buttonBounds.X + 18, (int)buttonBounds.Y + 8, 18, textColor);
+            Graphics.DrawText(waveforms[i].ToString(), (int)buttonBounds.X + 18, (int)buttonBounds.Y + 8, 18, buttonTextColor);
 
-            if (mousePressed && isHovered)
+            if (enabled && mousePressed && isHovered)
             {
                 currentValue = waveforms[i];
             }
@@ -47,6 +96,7 @@ internal static class SynthRenderer
     public static float DrawSlider(
         int index,
         ref int activeSlider,
+        bool enabled,
         string label,
         string valueLabel,
         Rectangle bounds,
@@ -64,13 +114,19 @@ internal static class SynthRenderer
         Color mutedTextColor)
     {
         Rectangle trackBounds = new(bounds.X, bounds.Y + 22, bounds.Width, bounds.Height);
+        Color effectiveTextColor = enabled ? textColor : new Color(134, 143, 160, 255);
+        Color effectiveMutedTextColor = enabled ? mutedTextColor : new Color(160, 168, 183, 255);
+        Color effectivePanelColor = enabled ? panelColor : new Color(243, 245, 249, 255);
+        Color effectiveBorderColor = enabled ? borderColor : new Color(205, 211, 222, 255);
+        Color effectiveAccentSoftColor = enabled ? accentSoftColor : new Color(224, 228, 236, 255);
+        Color effectiveAccentColor = enabled ? accentColor : new Color(182, 189, 201, 255);
 
-        if (mousePressed && Contains(trackBounds, mousePosition))
+        if (enabled && mousePressed && Contains(trackBounds, mousePosition))
         {
             activeSlider = index;
         }
 
-        if (mouseDown && activeSlider == index)
+        if (enabled && mouseDown && activeSlider == index)
         {
             float normalized = Math.Clamp((mousePosition.X - trackBounds.X) / trackBounds.Width, 0f, 1f);
             value = minValue + ((maxValue - minValue) * normalized);
@@ -80,13 +136,13 @@ internal static class SynthRenderer
         Rectangle fillBounds = new(trackBounds.X, trackBounds.Y, trackBounds.Width * ratio, trackBounds.Height);
         Rectangle thumbBounds = new(trackBounds.X + (trackBounds.Width * ratio) - 7f, trackBounds.Y - 4f, 14, trackBounds.Height + 8f);
 
-        Graphics.DrawText(label, (int)bounds.X, (int)bounds.Y, 18, textColor);
-        Graphics.DrawText(valueLabel, (int)(bounds.X + bounds.Width - 60), (int)bounds.Y, 18, mutedTextColor);
-        Graphics.DrawRectangleRec(trackBounds, panelColor);
-        Graphics.DrawRectangleLinesEx(trackBounds, 1f, borderColor);
-        Graphics.DrawRectangleRec(fillBounds, accentSoftColor);
-        Graphics.DrawRectangleLinesEx(fillBounds, 0f, accentSoftColor);
-        Graphics.DrawRectangleRec(thumbBounds, accentColor);
+        Graphics.DrawText(label, (int)bounds.X, (int)bounds.Y, 18, effectiveTextColor);
+        Graphics.DrawText(valueLabel, (int)(bounds.X + bounds.Width - 60), (int)bounds.Y, 18, effectiveMutedTextColor);
+        Graphics.DrawRectangleRec(trackBounds, effectivePanelColor);
+        Graphics.DrawRectangleLinesEx(trackBounds, 1f, effectiveBorderColor);
+        Graphics.DrawRectangleRec(fillBounds, effectiveAccentSoftColor);
+        Graphics.DrawRectangleLinesEx(fillBounds, 0f, effectiveAccentSoftColor);
+        Graphics.DrawRectangleRec(thumbBounds, effectiveAccentColor);
 
         return Math.Clamp(value, minValue, maxValue);
     }
