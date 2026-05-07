@@ -3,7 +3,7 @@ namespace TinySynth.Synth;
 internal sealed class SynthVoice
 {
     private readonly int _sampleRate;
-    private readonly float _masterGain;
+    private float _masterGain;
     private readonly OscillatorState[] _oscillators;
 
     private int _activeOscillatorCount;
@@ -29,6 +29,11 @@ internal sealed class SynthVoice
     public float CurrentFrequency => _activeOscillatorCount == 0 ? 0f : _oscillators[0].CurrentFrequency;
 
     public int ActiveMidiNote { get; private set; } = -1;
+
+    public void SetMasterGain(float masterGain)
+    {
+        _masterGain = masterGain;
+    }
 
     public void StartNote(int midiNote, SynthParameters parameters, bool forceRestart = false)
     {

@@ -15,11 +15,11 @@ internal static class LayoutCalculator
         float availableHeight = screenHeight - (panelMargin * 2);
         float minControlHeight = 300f;
         float minWaveformHeight = 120f;
-        float minKeyboardHeight = 120f;
+        float minKeyboardHeight = 150f;
         float extraHeight = MathF.Max(0f, availableHeight - (minControlHeight + minWaveformHeight + minKeyboardHeight + (panelGap * 2)));
 
         float adaptiveControlHeight = MathF.Min(controlPanelHeight, minControlHeight + (extraHeight * 0.30f));
-        float adaptiveKeyboardHeight = MathF.Min(keyboardPanelHeight, minKeyboardHeight + (extraHeight * 0.25f));
+        float adaptiveKeyboardHeight = MathF.Min(keyboardPanelHeight, minKeyboardHeight + (extraHeight * 0.35f));
         float adaptiveWaveformHeight = MathF.Max(minWaveformHeight, availableHeight - adaptiveControlHeight - adaptiveKeyboardHeight - (panelGap * 2));
 
         Rectangle controlPanel = new(panelMargin, panelMargin, screenWidth - (panelMargin * 2), adaptiveControlHeight);

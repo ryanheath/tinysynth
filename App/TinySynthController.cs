@@ -64,6 +64,7 @@ internal sealed class TinySynthController
     private int _activeSlider = -1;
     private int _scopeWriteIndex;
     private bool _holdPedalEnabled;
+    private float _masterVolume;
 
     public TinySynthController(
         AudioStream audioStream,
@@ -90,6 +91,7 @@ internal sealed class TinySynthController
         _keyboardPanelHeight = keyboardPanelHeight;
         _synthParameters = new SynthParameters();
         _synthEngine = new SynthEngine(sampleRate, masterGain, keyboardStartMidi, voiceCount: 4);
+        _masterVolume = masterGain;
     }
 
     public void RunFrame()
@@ -131,6 +133,7 @@ internal sealed class TinySynthController
         float sliderRowTwoY = layout.SliderRowTwoY;
         float sliderWidth = layout.SliderWidth;
         Rectangle holdPedalBounds = new(keyboardPanel.X + keyboardPanel.Width - 190, keyboardPanel.Y + 12, 192, 24);
+        Rectangle masterVolumeBounds = new(keyboardPanel.X + keyboardPanel.Width - 400, keyboardPanel.Y + 12, 180, 20);
 
         if (holdPedalTogglePressed || (mousePressed && SynthRenderer.Contains(holdPedalBounds, mousePosition)))
         {
@@ -381,6 +384,32 @@ internal sealed class TinySynthController
 
         SynthRenderer.DrawWaveformScope(waveformPanel, _scopeBuffer, _scopeWriteIndex, _accentStrongColor, _borderColor, _mutedTextColor);
         Graphics.DrawText("Keyboard", (int)keyboardPanel.X + 18, (int)keyboardPanel.Y + 14, 22, _textColor);
+        float newMasterVolume = SynthRenderer.DrawSlider(
+            index: 9,
+            activeSlider: ref _activeSlider,
+            enabled: true,
+            label: "Master",
+            valueLabel: $"{(_masterVolume * 100):0}%",
+            bounds: masterVolumeBounds,
+            value: _masterVolume,
+            minValue: 0.00f,
+            maxValue: 1.00f,
+            mousePosition: mousePosition,
+            mousePressed: mousePressed,
+            mouseDown: mouseDown,
+            accentColor: _accentColor,
+            accentSoftColor: _accentSoftColor,
+            borderColor: _borderColor,
+            panelColor: _panelColor,
+            textColor: _textColor,
+            mutedTextColor: _mutedTextColor);
+
+        if (MathF.Abs(newMasterVolume - _masterVolume) > 0.0001f)
+        {
+            _masterVolume = newMasterVolume;
+            _synthEngine.SetMasterGain(_masterVolume);
+        }
+
         SynthRenderer.DrawToggle(
             holdPedalBounds,
             "Hold pedal",

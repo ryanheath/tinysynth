@@ -17,7 +17,7 @@ internal static class KeyboardLayoutBuilder
             }
         }
 
-        float topPadding = 46f;
+        float topPadding = 64f;
         float bottomPadding = 10f;
         float whiteKeyWidth = bounds.Width / whiteKeyCount;
         float whiteKeyHeight = MathF.Max(52f, bounds.Height - topPadding - bottomPadding);

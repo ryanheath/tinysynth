@@ -192,9 +192,8 @@ internal static class SynthRenderer
     public static void DrawWaveformScope(Rectangle bounds, float[] samples, int writeIndex, Color waveColor, Color borderColor, Color labelColor)
     {
         Graphics.DrawText("Output waveform", (int)bounds.X + 18, (int)bounds.Y + 16, 22, labelColor);
-        Graphics.DrawText("Recent audio samples from the mixed synth output", (int)bounds.X + 18, (int)bounds.Y + 46, 18, labelColor);
 
-        Rectangle graphBounds = new(bounds.X + 18, bounds.Y + 82, bounds.Width - 36, bounds.Height - 100);
+        Rectangle graphBounds = new(bounds.X + 18, bounds.Y + 52, bounds.Width - 36, bounds.Height - 70);
         Graphics.DrawRectangleRec(graphBounds, new Color(246, 249, 255, 255));
         Graphics.DrawRectangleLinesEx(graphBounds, 1f, borderColor);
 

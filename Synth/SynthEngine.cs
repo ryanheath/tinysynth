@@ -30,6 +30,14 @@ internal sealed class SynthEngine
 
     public EnvelopeStage DisplayEnvelopeStage => GetDisplaySlot()?.Voice.EnvelopeStage ?? EnvelopeStage.Idle;
 
+    public void SetMasterGain(float masterGain)
+    {
+        foreach (VoiceSlot slot in _voiceSlots)
+        {
+            slot.Voice.SetMasterGain(masterGain);
+        }
+    }
+
     public void SetHoldPedal(bool enabled)
     {
         if (_holdPedalEnabled == enabled)
