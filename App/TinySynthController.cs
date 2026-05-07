@@ -130,7 +130,7 @@ internal sealed class TinySynthController
         float sliderRowOneY = layout.SliderRowOneY;
         float sliderRowTwoY = layout.SliderRowTwoY;
         float sliderWidth = layout.SliderWidth;
-        Rectangle holdPedalBounds = new(keyboardPanel.X + keyboardPanel.Width - 158, keyboardPanel.Y + 12, 126, 24);
+        Rectangle holdPedalBounds = new(keyboardPanel.X + keyboardPanel.Width - 190, keyboardPanel.Y + 12, 192, 24);
 
         if (holdPedalTogglePressed || (mousePressed && SynthRenderer.Contains(holdPedalBounds, mousePosition)))
         {
@@ -171,7 +171,7 @@ internal sealed class TinySynthController
         }
 
         Graphics.DrawText($"Waveform · Oscillator {_activeOscillatorIndex + 1}", (int)controlPanel.X + 20, (int)controlPanel.Y + 110, 18, _mutedTextColor);
-        Rectangle oscillatorEnabledBounds = new(controlPanel.X + 410, controlPanel.Y + 106, 126, 24);
+        Rectangle oscillatorEnabledBounds = new(controlPanel.X + 410, controlPanel.Y + 106, 192, 24);
 
         if (mousePressed && SynthRenderer.Contains(oscillatorEnabledBounds, mousePosition))
         {

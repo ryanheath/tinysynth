@@ -1,4 +1,5 @@
 using Raylib_CSharp.Colors;
+using Raylib_CSharp.Fonts;
 using Raylib_CSharp.Rendering;
 using Raylib_CSharp.Transformations;
 using System.Numerics;
@@ -72,6 +73,8 @@ internal static class SynthRenderer
             Rectangle buttonBounds = new(area.X + (i * (buttonWidth + buttonGap)), area.Y, buttonWidth, area.Height);
             bool isSelected = currentValue == waveforms[i];
             bool isHovered = Contains(buttonBounds, mousePosition);
+            string buttonLabel = waveforms[i].ToString();
+            const int buttonFontSize = 18;
             Color fill = enabled
                 ? (isSelected ? selectedColor : (isHovered ? new Color(245, 248, 255, 255) : panelColor))
                 : new Color(236, 239, 245, 255);
@@ -82,7 +85,10 @@ internal static class SynthRenderer
 
             Graphics.DrawRectangleRec(buttonBounds, fill);
             Graphics.DrawRectangleLinesEx(buttonBounds, isSelected ? 2.5f : 1f, outline);
-            Graphics.DrawText(waveforms[i].ToString(), (int)buttonBounds.X + 18, (int)buttonBounds.Y + 8, 18, buttonTextColor);
+            int textWidth = TextManager.MeasureText(buttonLabel, buttonFontSize);
+            int textX = (int)(buttonBounds.X + ((buttonBounds.Width - textWidth) / 2f));
+            int textY = (int)(buttonBounds.Y + ((buttonBounds.Height - buttonFontSize) / 2f) - 1f);
+            Graphics.DrawText(buttonLabel, textX, textY, buttonFontSize, buttonTextColor);
 
             if (enabled && mousePressed && isHovered)
             {
@@ -158,10 +164,22 @@ internal static class SynthRenderer
         Color textColor,
         Color mutedTextColor)
     {
-        Graphics.DrawText(label, (int)bounds.X, (int)bounds.Y - 1, 18, textColor);
-        Graphics.DrawText(value ? "On" : "Off", (int)bounds.X + 78, (int)bounds.Y - 1, 18, mutedTextColor);
+        const int labelFontSize = 18;
+        string stateLabel = value ? "On" : "Off";
+        int stateWidth = TextManager.MeasureText(stateLabel, labelFontSize);
+        int labelWidth = TextManager.MeasureText(label, labelFontSize);
+        int labelX = (int)bounds.X;
+        int labelY = (int)(bounds.Y + ((bounds.Height - labelFontSize) / 2f) - 1f);
+        float preferredTrackX = labelX + labelWidth + 8 + stateWidth + 10;
+        float trackX = MathF.Min(preferredTrackX, bounds.X + bounds.Width - 42f);
+        Rectangle trackBounds = new(trackX, bounds.Y + ((bounds.Height - 22f) / 2f), 42, 22);
+        int preferredStateX = labelX + labelWidth + 8;
+        int maxStateX = (int)(trackBounds.X - 8f - stateWidth);
+        int stateX = Math.Min(preferredStateX, maxStateX);
 
-        Rectangle trackBounds = new(bounds.X + 84, bounds.Y + 1, 42, 22);
+        Graphics.DrawText(label, labelX, labelY, labelFontSize, textColor);
+        Graphics.DrawText(stateLabel, stateX, labelY, labelFontSize, mutedTextColor);
+
         float knobSize = 18f;
         float knobX = value ? trackBounds.X + trackBounds.Width - knobSize - 2f : trackBounds.X + 2f;
         Rectangle knobBounds = new(knobX, trackBounds.Y + 2f, knobSize, knobSize);

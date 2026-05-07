@@ -107,7 +107,7 @@ internal sealed class SynthVoice
 
         float deltaTime = 1f / _sampleRate;
         float sample = 0f;
-        int audibleOscillatorCount = 0;
+        int enabledOscillatorCount = 0;
 
         for (int i = 0; i < _activeOscillatorCount; i++)
         {
@@ -116,6 +116,8 @@ internal sealed class SynthVoice
             {
                 continue;
             }
+
+            enabledOscillatorCount++;
 
             OscillatorState oscillator = _oscillators[i];
 
@@ -132,17 +134,16 @@ internal sealed class SynthVoice
 
             sample += oscillatorSample * oscillatorParameters.Gain * oscillator.EnvelopeLevel;
             AdvancePhase(oscillator, effectiveFrequency);
-            audibleOscillatorCount++;
         }
 
         RefreshEnvelopeStage(parameters);
 
-        if (EnvelopeStage == EnvelopeStage.Idle || audibleOscillatorCount == 0)
+        if (EnvelopeStage == EnvelopeStage.Idle || enabledOscillatorCount == 0)
         {
             return 0f;
         }
 
-        return (sample / MathF.Sqrt(audibleOscillatorCount)) * _masterGain;
+        return (sample / MathF.Sqrt(enabledOscillatorCount)) * _masterGain;
     }
 
     private void UpdateFrequency(float deltaTime, OscillatorState oscillator, OscillatorParameters parameters)
