@@ -41,7 +41,11 @@ internal sealed class TinySynthController
     private readonly float[] _audioBuffer;
     private readonly float[] _scopeBuffer;
     private readonly SynthParameters _synthParameters;
-    private readonly SynthVoice _synthVoice;
+    private readonly SynthEngine _synthEngine;
+    private readonly HashSet<int> _currentKeyboardMidiNotes = [];
+    private readonly HashSet<int> _currentPhysicalMidiNotes = [];
+    private readonly HashSet<int> _previousPhysicalMidiNotes = [];
+    private readonly List<int> _noteChangeBuffer = [];
 
     private readonly Color _backgroundColor = new(242, 245, 250, 255);
     private readonly Color _panelColor = new(252, 253, 255, 255);
@@ -56,7 +60,6 @@ internal sealed class TinySynthController
     private readonly Color _darkKeyColor = new(40, 46, 60, 255);
 
     private int _activePointerMidiNote = -1;
-    private int _activeKeyboardMidiNote = -1;
     private int _activeSlider = -1;
     private int _scopeWriteIndex;
     private bool _holdPedalEnabled;
@@ -85,7 +88,7 @@ internal sealed class TinySynthController
         _controlPanelHeight = controlPanelHeight;
         _keyboardPanelHeight = keyboardPanelHeight;
         _synthParameters = new SynthParameters();
-        _synthVoice = new SynthVoice(sampleRate, masterGain, keyboardStartMidi);
+        _synthEngine = new SynthEngine(sampleRate, masterGain, keyboardStartMidi, voiceCount: 4);
     }
 
     public void RunFrame()
@@ -101,6 +104,7 @@ internal sealed class TinySynthController
         bool mousePressed = Input.IsMouseButtonPressed(MouseButton.Left);
         bool mouseDown = Input.IsMouseButtonDown(MouseButton.Left);
         bool mouseReleased = Input.IsMouseButtonReleased(MouseButton.Left);
+        bool holdPedalTogglePressed = Input.IsKeyPressed(KeyboardKey.Space);
 
         if (!mouseDown)
         {
@@ -112,62 +116,21 @@ internal sealed class TinySynthController
         float sliderWidth = layout.SliderWidth;
         Rectangle holdPedalBounds = new(keyboardPanel.X + keyboardPanel.Width - 158, keyboardPanel.Y + 12, 126, 24);
 
-        if (mousePressed && SynthRenderer.Contains(holdPedalBounds, mousePosition))
+        if (holdPedalTogglePressed || (mousePressed && SynthRenderer.Contains(holdPedalBounds, mousePosition)))
         {
             _holdPedalEnabled = !_holdPedalEnabled;
-
-            if (!_holdPedalEnabled && _activeKeyboardMidiNote < 0 && _activePointerMidiNote < 0)
-            {
-                _synthVoice.ReleaseNote();
-            }
+            _synthEngine.SetHoldPedal(_holdPedalEnabled);
         }
 
         PianoKeyLayout[] keys = KeyboardLayoutBuilder.Build(keyboardPanel, _keyboardStartMidi, _keyboardNoteCount);
         int hoveredMidiNote = KeyboardLayoutBuilder.GetHoveredMidiNote(keys, mousePosition);
-        int pressedKeyboardMidiNote = GetPressedKeyboardMidiNote();
-
-        if (pressedKeyboardMidiNote >= 0)
-        {
-            if (_activeKeyboardMidiNote != pressedKeyboardMidiNote)
-            {
-                _activeKeyboardMidiNote = pressedKeyboardMidiNote;
-                _synthVoice.StartNote(pressedKeyboardMidiNote, _synthParameters);
-            }
-        }
-        else if (_activeKeyboardMidiNote >= 0)
-        {
-            if (!_holdPedalEnabled && _activePointerMidiNote < 0)
-            {
-                _synthVoice.ReleaseNote();
-            }
-
-            _activeKeyboardMidiNote = -1;
-        }
-
-        if (mousePressed && hoveredMidiNote >= 0)
-        {
-            _activePointerMidiNote = hoveredMidiNote;
-            _synthVoice.StartNote(hoveredMidiNote, _synthParameters);
-        }
-        else if (mouseDown && _activePointerMidiNote >= 0 && hoveredMidiNote >= 0 && hoveredMidiNote != _activePointerMidiNote)
-        {
-            _activePointerMidiNote = hoveredMidiNote;
-            _synthVoice.StartNote(hoveredMidiNote, _synthParameters);
-        }
-
-        if (mouseReleased && _activePointerMidiNote >= 0)
-        {
-            if (!_holdPedalEnabled && _activeKeyboardMidiNote < 0)
-            {
-                _synthVoice.ReleaseNote();
-            }
-
-            _activePointerMidiNote = -1;
-        }
+        UpdatePointerMidiNote(mousePressed, mouseDown, mouseReleased, hoveredMidiNote);
+        GetPressedKeyboardMidiNotes(_currentKeyboardMidiNotes);
+        SyncPhysicalNotes();
 
         while (_audioStream.IsProcessed())
         {
-            _synthVoice.FillBuffer(_audioBuffer, _scopeBuffer, ref _scopeWriteIndex, _synthParameters);
+            _synthEngine.FillBuffer(_audioBuffer, _scopeBuffer, ref _scopeWriteIndex, _synthParameters);
             Marshal.Copy(_audioBuffer, 0, _audioBufferPointer, _audioBuffer.Length);
             _audioStream.Update(_audioBufferPointer, _audioBuffer.Length);
         }
@@ -355,11 +318,12 @@ internal sealed class TinySynthController
             textColor: _textColor,
             mutedTextColor: _mutedTextColor);
 
-        string noteStatus = _synthVoice.ActiveMidiNote >= 0
-            ? $"Playing {MidiUtilities.MidiToNoteName(_synthVoice.ActiveMidiNote)}  •  {_synthVoice.CurrentFrequency:0.0} Hz  •  {_synthParameters.Waveform}"
+        int displayMidiNote = _synthEngine.DisplayMidiNote;
+        string noteStatus = displayMidiNote >= 0
+            ? $"Playing {MidiUtilities.MidiToNoteName(displayMidiNote)}  •  {_synthEngine.DisplayFrequency:0.0} Hz  •  {_synthEngine.ActiveVoiceCount} voices"
             : "Click the piano keys or use ZSXDCVGBHNJM, from C4 to C5.";
         Graphics.DrawText(noteStatus, (int)controlPanel.X + 410, (int)controlPanel.Y + 52, 20, _textColor);
-        Graphics.DrawText($"Envelope: {_synthVoice.EnvelopeStage}", (int)controlPanel.X + 410, (int)controlPanel.Y + 82, 18, _mutedTextColor);
+        Graphics.DrawText($"Envelope: {_synthEngine.DisplayEnvelopeStage}", (int)controlPanel.X + 410, (int)controlPanel.Y + 82, 18, _mutedTextColor);
 
         SynthRenderer.DrawWaveformScope(waveformPanel, _scopeBuffer, _scopeWriteIndex, _accentStrongColor, _borderColor, _mutedTextColor);
         Graphics.DrawText("Keyboard", (int)keyboardPanel.X + 18, (int)keyboardPanel.Y + 14, 22, _textColor);
@@ -373,21 +337,93 @@ internal sealed class TinySynthController
             _panelColor,
             _textColor,
             _mutedTextColor);
-        SynthRenderer.DrawKeyboard(keys, _synthVoice.ActiveMidiNote, hoveredMidiNote, _whiteKeyColor, _borderColor, _darkKeyColor, _accentSoftColor, _accentStrongColor, _textColor);
+        SynthRenderer.DrawKeyboard(keys, _synthEngine.ActiveNotes, hoveredMidiNote, _whiteKeyColor, _borderColor, _darkKeyColor, _accentSoftColor, _accentStrongColor, _textColor);
 
         Graphics.EndDrawing();
     }
 
-    private static int GetPressedKeyboardMidiNote()
+    private void UpdatePointerMidiNote(bool mousePressed, bool mouseDown, bool mouseReleased, int hoveredMidiNote)
     {
+        if (mousePressed && hoveredMidiNote >= 0)
+        {
+            _activePointerMidiNote = hoveredMidiNote;
+            return;
+        }
+
+        if (mouseDown && _activePointerMidiNote >= 0 && hoveredMidiNote >= 0)
+        {
+            _activePointerMidiNote = hoveredMidiNote;
+            return;
+        }
+
+        if (mouseReleased)
+        {
+            _activePointerMidiNote = -1;
+        }
+    }
+
+    private void SyncPhysicalNotes()
+    {
+        _currentPhysicalMidiNotes.Clear();
+
+        foreach (int note in _currentKeyboardMidiNotes)
+        {
+            _currentPhysicalMidiNotes.Add(note);
+        }
+
+        if (_activePointerMidiNote >= 0)
+        {
+            _currentPhysicalMidiNotes.Add(_activePointerMidiNote);
+        }
+
+        _noteChangeBuffer.Clear();
+
+        foreach (int note in _currentPhysicalMidiNotes)
+        {
+            if (!_previousPhysicalMidiNotes.Contains(note))
+            {
+                _noteChangeBuffer.Add(note);
+            }
+        }
+
+        foreach (int note in _noteChangeBuffer)
+        {
+            _synthEngine.NoteOn(note, _synthParameters);
+        }
+
+        _noteChangeBuffer.Clear();
+
+        foreach (int note in _previousPhysicalMidiNotes)
+        {
+            if (!_currentPhysicalMidiNotes.Contains(note))
+            {
+                _noteChangeBuffer.Add(note);
+            }
+        }
+
+        foreach (int note in _noteChangeBuffer)
+        {
+            _synthEngine.NoteOff(note);
+        }
+
+        _previousPhysicalMidiNotes.Clear();
+
+        foreach (int note in _currentPhysicalMidiNotes)
+        {
+            _previousPhysicalMidiNotes.Add(note);
+        }
+    }
+
+    private static void GetPressedKeyboardMidiNotes(HashSet<int> pressedNotes)
+    {
+        pressedNotes.Clear();
+
         foreach ((KeyboardKey key, int midiNote) in _computerKeyboardMappings)
         {
             if (Input.IsKeyDown(key))
             {
-                return midiNote;
+                pressedNotes.Add(midiNote);
             }
         }
-
-        return -1;
     }
 }

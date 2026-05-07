@@ -118,7 +118,7 @@ internal static class SynthRenderer
     public static void DrawWaveformScope(Rectangle bounds, float[] samples, int writeIndex, Color waveColor, Color borderColor, Color labelColor)
     {
         Graphics.DrawText("Output waveform", (int)bounds.X + 18, (int)bounds.Y + 16, 22, labelColor);
-        Graphics.DrawText("Recent audio samples from the active synth voice", (int)bounds.X + 18, (int)bounds.Y + 46, 18, labelColor);
+        Graphics.DrawText("Recent audio samples from the mixed synth output", (int)bounds.X + 18, (int)bounds.Y + 46, 18, labelColor);
 
         Rectangle graphBounds = new(bounds.X + 18, bounds.Y + 82, bounds.Width - 36, bounds.Height - 100);
         Graphics.DrawRectangleRec(graphBounds, new Color(246, 249, 255, 255));
@@ -146,7 +146,7 @@ internal static class SynthRenderer
 
     public static void DrawKeyboard(
         PianoKeyLayout[] keys,
-        int activeNote,
+        IReadOnlySet<int> activeNotes,
         int hoveredNote,
         Color whiteKeyColor,
         Color borderColor,
@@ -157,7 +157,7 @@ internal static class SynthRenderer
     {
         foreach (PianoKeyLayout key in keys.Where(static key => !key.IsBlack))
         {
-            bool isActive = key.MidiNote == activeNote;
+            bool isActive = activeNotes.Contains(key.MidiNote);
             bool isHovered = key.MidiNote == hoveredNote;
             Color fill = isActive ? activeWhiteKeyColor : (isHovered ? new Color(242, 247, 255, 255) : whiteKeyColor);
 
@@ -172,7 +172,7 @@ internal static class SynthRenderer
 
         foreach (PianoKeyLayout key in keys.Where(static key => key.IsBlack))
         {
-            bool isActive = key.MidiNote == activeNote;
+            bool isActive = activeNotes.Contains(key.MidiNote);
             bool isHovered = key.MidiNote == hoveredNote;
             Color fill = isActive ? activeBlackKeyColor : (isHovered ? new Color(70, 78, 99, 255) : blackKeyColor);
 

@@ -25,18 +25,20 @@ internal sealed class SynthVoice
 
     public EnvelopeStage EnvelopeStage { get; private set; } = EnvelopeStage.Idle;
 
+    public bool IsIdle => EnvelopeStage == EnvelopeStage.Idle;
+
     public float CurrentFrequency => _currentFrequency;
 
     public int ActiveMidiNote { get; private set; } = -1;
 
-    public void StartNote(int midiNote, SynthParameters parameters)
+    public void StartNote(int midiNote, SynthParameters parameters, bool forceRestart = false)
     {
         bool isAudible = EnvelopeStage != EnvelopeStage.Idle && _envelopeLevel > 0f;
 
         ActiveMidiNote = midiNote;
         _targetFrequency = ApplyDetune(MidiUtilities.MidiToFrequency(midiNote), parameters.DetuneCents);
 
-        if (!isAudible)
+        if (!isAudible || forceRestart)
         {
             _oscillatorPhase = 0f;
             _vibratoPhase = 0f;
@@ -61,14 +63,11 @@ internal sealed class SynthVoice
         EnvelopeStage = EnvelopeStage.Release;
     }
 
-    public void FillBuffer(float[] audioBuffer, float[] scopeBuffer, ref int scopeWriteIndex, SynthParameters parameters)
+    public void AddToBuffer(float[] audioBuffer, SynthParameters parameters)
     {
         for (int i = 0; i < audioBuffer.Length; i++)
         {
-            float sample = NextSample(parameters);
-            audioBuffer[i] = sample;
-            scopeBuffer[scopeWriteIndex] = sample;
-            scopeWriteIndex = (scopeWriteIndex + 1) % scopeBuffer.Length;
+            audioBuffer[i] += NextSample(parameters);
         }
     }
 
