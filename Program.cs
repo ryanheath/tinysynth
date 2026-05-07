@@ -7,7 +7,7 @@ using static Raylib_CSharp.Time;
 const int screenWidth = 1200;
 const int screenHeight = 720;
 const int sampleRate = 44100;
-const int audioBufferSize = 512;
+const int audioBufferSize = 2048;
 const int keyboardStartMidi = 60;
 const int keyboardNoteCount = 24;
 const float masterGain = 0.22f;

@@ -26,18 +26,20 @@ internal sealed class SynthVoice
 
     public void StartNote(int midiNote, SynthParameters parameters)
     {
+        bool isAudible = EnvelopeStage != EnvelopeStage.Idle && _envelopeLevel > 0f;
+
         ActiveMidiNote = midiNote;
         _currentFrequency = MidiUtilities.MidiToFrequency(midiNote);
-        _oscillatorPhase = 0f;
-        _envelopeLevel = 0f;
+
+        if (!isAudible)
+        {
+            _oscillatorPhase = 0f;
+            _envelopeLevel = 0f;
+        }
+
         _releaseElapsed = 0f;
         _releaseStartLevel = 0f;
-        EnvelopeStage = parameters.AttackSeconds <= 0.01f ? EnvelopeStage.Decay : EnvelopeStage.Attack;
-
-        if (EnvelopeStage == EnvelopeStage.Decay)
-        {
-            _envelopeLevel = 1f;
-        }
+        EnvelopeStage = EnvelopeStage.Attack;
     }
 
     public void ReleaseNote()
