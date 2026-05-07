@@ -13,6 +13,23 @@ namespace TinySynth.App;
 
 internal sealed class TinySynthController
 {
+    private static readonly (KeyboardKey Key, int MidiNote)[] _computerKeyboardMappings =
+    [
+        (KeyboardKey.Z, 60),
+        (KeyboardKey.S, 61),
+        (KeyboardKey.X, 62),
+        (KeyboardKey.D, 63),
+        (KeyboardKey.C, 64),
+        (KeyboardKey.V, 65),
+        (KeyboardKey.G, 66),
+        (KeyboardKey.B, 67),
+        (KeyboardKey.H, 68),
+        (KeyboardKey.N, 69),
+        (KeyboardKey.J, 70),
+        (KeyboardKey.M, 71),
+        (KeyboardKey.Comma, 72)
+    ];
+
     private readonly int _keyboardStartMidi;
     private readonly int _keyboardNoteCount;
     private readonly float _panelGap;
@@ -39,6 +56,7 @@ internal sealed class TinySynthController
     private readonly Color _darkKeyColor = new(40, 46, 60, 255);
 
     private int _activePointerMidiNote = -1;
+    private int _activeKeyboardMidiNote = -1;
     private int _activeSlider = -1;
     private int _scopeWriteIndex;
 
@@ -88,11 +106,27 @@ internal sealed class TinySynthController
             _activeSlider = -1;
         }
 
-        float sliderY = layout.SliderY;
+        float sliderRowOneY = layout.SliderRowOneY;
+        float sliderRowTwoY = layout.SliderRowTwoY;
         float sliderWidth = layout.SliderWidth;
 
         PianoKeyLayout[] keys = KeyboardLayoutBuilder.Build(keyboardPanel, _keyboardStartMidi, _keyboardNoteCount);
         int hoveredMidiNote = KeyboardLayoutBuilder.GetHoveredMidiNote(keys, mousePosition);
+        int pressedKeyboardMidiNote = GetPressedKeyboardMidiNote();
+
+        if (pressedKeyboardMidiNote >= 0)
+        {
+            if (_activeKeyboardMidiNote != pressedKeyboardMidiNote)
+            {
+                _activeKeyboardMidiNote = pressedKeyboardMidiNote;
+                _synthVoice.StartNote(pressedKeyboardMidiNote, _synthParameters);
+            }
+        }
+        else if (_activeKeyboardMidiNote >= 0)
+        {
+            _synthVoice.ReleaseNote();
+            _activeKeyboardMidiNote = -1;
+        }
 
         if (mousePressed && hoveredMidiNote >= 0)
         {
@@ -107,7 +141,11 @@ internal sealed class TinySynthController
 
         if (mouseReleased && _activePointerMidiNote >= 0)
         {
-            _synthVoice.ReleaseNote();
+            if (_activeKeyboardMidiNote < 0)
+            {
+                _synthVoice.ReleaseNote();
+            }
+
             _activePointerMidiNote = -1;
         }
 
@@ -130,12 +168,107 @@ internal sealed class TinySynthController
 
         _synthParameters.Waveform = SynthRenderer.DrawWaveformButtons(layout.WaveformButtonsArea, _synthParameters.Waveform, mousePosition, mousePressed, _panelColor, _borderColor, _accentSoftColor, _accentStrongColor, _textColor);
 
-        _synthParameters.AttackSeconds = SynthRenderer.DrawSlider(
+        _synthParameters.Gain = SynthRenderer.DrawSlider(
             index: 0,
+            activeSlider: ref _activeSlider,
+            label: "Gain",
+            valueLabel: $"{_synthParameters.Gain:0.00}",
+            bounds: new Rectangle(controlPanel.X + 20 + ((sliderWidth + 18) * 0), sliderRowOneY, sliderWidth, 20),
+            value: _synthParameters.Gain,
+            minValue: 0.00f,
+            maxValue: 1.00f,
+            mousePosition: mousePosition,
+            mousePressed: mousePressed,
+            mouseDown: mouseDown,
+            accentColor: _accentColor,
+            accentSoftColor: _accentSoftColor,
+            borderColor: _borderColor,
+            panelColor: _panelColor,
+            textColor: _textColor,
+            mutedTextColor: _mutedTextColor);
+
+        _synthParameters.DetuneCents = SynthRenderer.DrawSlider(
+            index: 1,
+            activeSlider: ref _activeSlider,
+            label: "Detune",
+            valueLabel: $"{_synthParameters.DetuneCents:0} ct",
+            bounds: new Rectangle(controlPanel.X + 20 + ((sliderWidth + 18) * 1), sliderRowOneY, sliderWidth, 20),
+            value: _synthParameters.DetuneCents,
+            minValue: -100.00f,
+            maxValue: 100.00f,
+            mousePosition: mousePosition,
+            mousePressed: mousePressed,
+            mouseDown: mouseDown,
+            accentColor: _accentColor,
+            accentSoftColor: _accentSoftColor,
+            borderColor: _borderColor,
+            panelColor: _panelColor,
+            textColor: _textColor,
+            mutedTextColor: _mutedTextColor);
+
+        _synthParameters.GlideSeconds = SynthRenderer.DrawSlider(
+            index: 2,
+            activeSlider: ref _activeSlider,
+            label: "Glide",
+            valueLabel: $"{_synthParameters.GlideSeconds:0.00}s",
+            bounds: new Rectangle(controlPanel.X + 20 + ((sliderWidth + 18) * 2), sliderRowOneY, sliderWidth, 20),
+            value: _synthParameters.GlideSeconds,
+            minValue: 0.00f,
+            maxValue: 1.50f,
+            mousePosition: mousePosition,
+            mousePressed: mousePressed,
+            mouseDown: mouseDown,
+            accentColor: _accentColor,
+            accentSoftColor: _accentSoftColor,
+            borderColor: _borderColor,
+            panelColor: _panelColor,
+            textColor: _textColor,
+            mutedTextColor: _mutedTextColor);
+
+        _synthParameters.VibratoDepthCents = SynthRenderer.DrawSlider(
+            index: 3,
+            activeSlider: ref _activeSlider,
+            label: "Vib depth",
+            valueLabel: $"{_synthParameters.VibratoDepthCents:0} ct",
+            bounds: new Rectangle(controlPanel.X + 20 + ((sliderWidth + 18) * 3), sliderRowOneY, sliderWidth, 20),
+            value: _synthParameters.VibratoDepthCents,
+            minValue: 0.00f,
+            maxValue: 100.00f,
+            mousePosition: mousePosition,
+            mousePressed: mousePressed,
+            mouseDown: mouseDown,
+            accentColor: _accentColor,
+            accentSoftColor: _accentSoftColor,
+            borderColor: _borderColor,
+            panelColor: _panelColor,
+            textColor: _textColor,
+            mutedTextColor: _mutedTextColor);
+
+        _synthParameters.VibratoRateHz = SynthRenderer.DrawSlider(
+            index: 4,
+            activeSlider: ref _activeSlider,
+            label: "Vib rate",
+            valueLabel: $"{_synthParameters.VibratoRateHz:0.0}Hz",
+            bounds: new Rectangle(controlPanel.X + 20 + ((sliderWidth + 18) * 4), sliderRowOneY, sliderWidth, 20),
+            value: _synthParameters.VibratoRateHz,
+            minValue: 0.10f,
+            maxValue: 12.00f,
+            mousePosition: mousePosition,
+            mousePressed: mousePressed,
+            mouseDown: mouseDown,
+            accentColor: _accentColor,
+            accentSoftColor: _accentSoftColor,
+            borderColor: _borderColor,
+            panelColor: _panelColor,
+            textColor: _textColor,
+            mutedTextColor: _mutedTextColor);
+
+        _synthParameters.AttackSeconds = SynthRenderer.DrawSlider(
+            index: 5,
             activeSlider: ref _activeSlider,
             label: "Attack",
             valueLabel: $"{_synthParameters.AttackSeconds:0.00}s",
-            bounds: new Rectangle(controlPanel.X + 20 + ((sliderWidth + 18) * 0), sliderY, sliderWidth, 20),
+            bounds: new Rectangle(controlPanel.X + 20 + ((sliderWidth + 18) * 0), sliderRowTwoY, sliderWidth, 20),
             value: _synthParameters.AttackSeconds,
             minValue: 0.01f,
             maxValue: 2.00f,
@@ -150,11 +283,11 @@ internal sealed class TinySynthController
             mutedTextColor: _mutedTextColor);
 
         _synthParameters.DecaySeconds = SynthRenderer.DrawSlider(
-            index: 1,
+            index: 6,
             activeSlider: ref _activeSlider,
             label: "Decay",
             valueLabel: $"{_synthParameters.DecaySeconds:0.00}s",
-            bounds: new Rectangle(controlPanel.X + 20 + ((sliderWidth + 18) * 1), sliderY, sliderWidth, 20),
+            bounds: new Rectangle(controlPanel.X + 20 + ((sliderWidth + 18) * 1), sliderRowTwoY, sliderWidth, 20),
             value: _synthParameters.DecaySeconds,
             minValue: 0.01f,
             maxValue: 2.00f,
@@ -169,11 +302,11 @@ internal sealed class TinySynthController
             mutedTextColor: _mutedTextColor);
 
         _synthParameters.SustainLevel = SynthRenderer.DrawSlider(
-            index: 2,
+            index: 7,
             activeSlider: ref _activeSlider,
             label: "Sustain",
             valueLabel: $"{_synthParameters.SustainLevel:0.00}",
-            bounds: new Rectangle(controlPanel.X + 20 + ((sliderWidth + 18) * 2), sliderY, sliderWidth, 20),
+            bounds: new Rectangle(controlPanel.X + 20 + ((sliderWidth + 18) * 2), sliderRowTwoY, sliderWidth, 20),
             value: _synthParameters.SustainLevel,
             minValue: 0.00f,
             maxValue: 1.00f,
@@ -188,11 +321,11 @@ internal sealed class TinySynthController
             mutedTextColor: _mutedTextColor);
 
         _synthParameters.ReleaseSeconds = SynthRenderer.DrawSlider(
-            index: 3,
+            index: 8,
             activeSlider: ref _activeSlider,
             label: "Release",
             valueLabel: $"{_synthParameters.ReleaseSeconds:0.00}s",
-            bounds: new Rectangle(controlPanel.X + 20 + ((sliderWidth + 18) * 3), sliderY, sliderWidth, 20),
+            bounds: new Rectangle(controlPanel.X + 20 + ((sliderWidth + 18) * 3), sliderRowTwoY, sliderWidth, 20),
             value: _synthParameters.ReleaseSeconds,
             minValue: 0.01f,
             maxValue: 2.50f,
@@ -208,7 +341,7 @@ internal sealed class TinySynthController
 
         string noteStatus = _synthVoice.ActiveMidiNote >= 0
             ? $"Playing {MidiUtilities.MidiToNoteName(_synthVoice.ActiveMidiNote)}  •  {_synthVoice.CurrentFrequency:0.0} Hz  •  {_synthParameters.Waveform}"
-            : "Click and hold the piano keys to play the synth.";
+            : "Click the piano keys or use ZSXDCVGBHNJM, from C4 to C5.";
         Graphics.DrawText(noteStatus, (int)controlPanel.X + 410, (int)controlPanel.Y + 52, 20, _textColor);
         Graphics.DrawText($"Envelope: {_synthVoice.EnvelopeStage}", (int)controlPanel.X + 410, (int)controlPanel.Y + 82, 18, _mutedTextColor);
 
@@ -217,5 +350,18 @@ internal sealed class TinySynthController
         SynthRenderer.DrawKeyboard(keys, _synthVoice.ActiveMidiNote, hoveredMidiNote, _whiteKeyColor, _borderColor, _darkKeyColor, _accentSoftColor, _accentStrongColor, _textColor);
 
         Graphics.EndDrawing();
+    }
+
+    private static int GetPressedKeyboardMidiNote()
+    {
+        foreach ((KeyboardKey key, int midiNote) in _computerKeyboardMappings)
+        {
+            if (Input.IsKeyDown(key))
+            {
+                return midiNote;
+            }
+        }
+
+        return -1;
     }
 }

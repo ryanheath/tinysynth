@@ -8,12 +8,12 @@ const int screenWidth = 1200;
 const int screenHeight = 720;
 const int sampleRate = 44100;
 const int audioBufferSize = 2048;
-const int keyboardStartMidi = 60;
-const int keyboardNoteCount = 24;
+const int keyboardStartMidi = 48;
+const int keyboardNoteCount = 49;
 const float masterGain = 0.22f;
 const float panelGap = 20f;
 const float panelMargin = 20f;
-const float controlPanelHeight = 170f;
+const float controlPanelHeight = 235f;
 const float keyboardPanelHeight = 180f;
 
 float[] audioBuffer = new float[audioBufferSize];

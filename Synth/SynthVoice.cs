@@ -10,12 +10,17 @@ internal sealed class SynthVoice
     private float _releaseElapsed;
     private float _oscillatorPhase;
     private float _currentFrequency;
+    private float _targetFrequency;
+    private float _vibratoPhase;
 
     public SynthVoice(int sampleRate, float masterGain, int defaultMidiNote)
     {
         _sampleRate = sampleRate;
         _masterGain = masterGain;
-        _currentFrequency = MidiUtilities.MidiToFrequency(defaultMidiNote);
+
+        float defaultFrequency = MidiUtilities.MidiToFrequency(defaultMidiNote);
+        _currentFrequency = defaultFrequency;
+        _targetFrequency = defaultFrequency;
     }
 
     public EnvelopeStage EnvelopeStage { get; private set; } = EnvelopeStage.Idle;
@@ -29,12 +34,14 @@ internal sealed class SynthVoice
         bool isAudible = EnvelopeStage != EnvelopeStage.Idle && _envelopeLevel > 0f;
 
         ActiveMidiNote = midiNote;
-        _currentFrequency = MidiUtilities.MidiToFrequency(midiNote);
+        _targetFrequency = ApplyDetune(MidiUtilities.MidiToFrequency(midiNote), parameters.DetuneCents);
 
         if (!isAudible)
         {
             _oscillatorPhase = 0f;
+            _vibratoPhase = 0f;
             _envelopeLevel = 0f;
+            _currentFrequency = _targetFrequency;
         }
 
         _releaseElapsed = 0f;
@@ -69,11 +76,14 @@ internal sealed class SynthVoice
     {
         float deltaTime = 1f / _sampleRate;
         UpdateEnvelope(deltaTime, parameters);
+        UpdateFrequency(deltaTime, parameters);
 
         if (EnvelopeStage == EnvelopeStage.Idle || ActiveMidiNote < 0)
         {
             return 0f;
         }
+
+        float effectiveFrequency = ApplyVibrato(_currentFrequency, deltaTime, parameters);
 
         float sample = parameters.Waveform switch
         {
@@ -84,10 +94,41 @@ internal sealed class SynthVoice
             _ => 0f
         };
 
-        _oscillatorPhase += _currentFrequency / _sampleRate;
+        _oscillatorPhase += effectiveFrequency / _sampleRate;
         _oscillatorPhase -= MathF.Floor(_oscillatorPhase);
 
-        return sample * _envelopeLevel * _masterGain;
+        return sample * parameters.Gain * _envelopeLevel * _masterGain;
+    }
+
+    private void UpdateFrequency(float deltaTime, SynthParameters parameters)
+    {
+        if (parameters.GlideSeconds <= 0.001f)
+        {
+            _currentFrequency = _targetFrequency;
+            return;
+        }
+
+        float glideFactor = MathF.Min(deltaTime / parameters.GlideSeconds, 1f);
+        _currentFrequency += (_targetFrequency - _currentFrequency) * glideFactor;
+    }
+
+    private float ApplyVibrato(float baseFrequency, float deltaTime, SynthParameters parameters)
+    {
+        if (parameters.VibratoDepthCents <= 0f || parameters.VibratoRateHz <= 0f)
+        {
+            return baseFrequency;
+        }
+
+        _vibratoPhase += parameters.VibratoRateHz * deltaTime;
+        _vibratoPhase -= MathF.Floor(_vibratoPhase);
+
+        float vibratoCents = MathF.Sin(_vibratoPhase * MathF.Tau) * parameters.VibratoDepthCents;
+        return ApplyDetune(baseFrequency, vibratoCents);
+    }
+
+    private static float ApplyDetune(float frequency, float cents)
+    {
+        return frequency * MathF.Pow(2f, cents / 1200f);
     }
 
     private void UpdateEnvelope(float deltaTime, SynthParameters parameters)
