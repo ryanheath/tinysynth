@@ -30,12 +30,13 @@ internal static class LayoutCalculator
         float sliderRowTwoY = controlPanel.Y + 292;
         float sliderWidth = (controlPanel.Width - 40 - (18 * 4)) / 5f;
         float filterSliderY = controlPanel.Y + 236;
-        float filterSliderWidth = (controlPanel.Width - 40 - 18) / 2f;
+        float filterSliderWidth = 190f;
         Rectangle modeButtonsArea = new(controlPanel.X + 20, controlPanel.Y + 66, 220, 36);
         Rectangle oscillatorButtonsArea = new(controlPanel.X + 20, controlPanel.Y + 118, 360, 36);
         Rectangle waveformButtonsArea = new(controlPanel.X + 20, controlPanel.Y + 184, 360, 36);
         Rectangle filterButtonsArea = new(controlPanel.X + 20, controlPanel.Y + 170, 420, 36);
+        Rectangle filterAnalysisArea = new(controlPanel.X + 20 + (filterSliderWidth * 2f) + 56f, controlPanel.Y + 108, controlPanel.Width - ((20 + (filterSliderWidth * 2f) + 56f) + 20), controlPanel.Height - 128);
 
-        return new LayoutMetrics(controlPanel, waveformPanel, keyboardPanel, modeButtonsArea, oscillatorButtonsArea, filterButtonsArea, sliderRowOneY, sliderRowTwoY, sliderWidth, filterSliderY, filterSliderWidth, waveformButtonsArea);
+        return new LayoutMetrics(controlPanel, waveformPanel, keyboardPanel, modeButtonsArea, oscillatorButtonsArea, filterButtonsArea, filterAnalysisArea, sliderRowOneY, sliderRowTwoY, sliderWidth, filterSliderY, filterSliderWidth, waveformButtonsArea);
     }
 }

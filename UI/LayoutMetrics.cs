@@ -9,6 +9,7 @@ internal readonly record struct LayoutMetrics(
     Rectangle ModeButtonsArea,
     Rectangle OscillatorButtonsArea,
     Rectangle FilterButtonsArea,
+    Rectangle FilterAnalysisArea,
     float SliderRowOneY,
     float SliderRowTwoY,
     float SliderWidth,

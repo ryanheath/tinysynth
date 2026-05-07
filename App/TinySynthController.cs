@@ -141,6 +141,7 @@ internal sealed class TinySynthController
         float sliderWidth = layout.SliderWidth;
         float filterSliderY = layout.FilterSliderY;
         float filterSliderWidth = layout.FilterSliderWidth;
+        Rectangle filterAnalysisArea = layout.FilterAnalysisArea;
         Rectangle holdPedalBounds = new(keyboardPanel.X + keyboardPanel.Width - 190, keyboardPanel.Y + 12, 192, 24);
         Rectangle masterVolumeBounds = new(keyboardPanel.X + keyboardPanel.Width - 400, keyboardPanel.Y + 12, 180, 20);
 
@@ -393,6 +394,7 @@ internal sealed class TinySynthController
             panelColor: _panelColor,
             textColor: _textColor,
             mutedTextColor: _mutedTextColor);
+
         }
         else
         {
@@ -438,6 +440,19 @@ internal sealed class TinySynthController
                 panelColor: _panelColor,
                 textColor: _textColor,
                 mutedTextColor: _mutedTextColor);
+
+            SynthRenderer.DrawFilterAnalysis(
+                filterAnalysisArea,
+                _scopeBuffer,
+                _scopeWriteIndex,
+                sampleRate: 44100,
+                filterType: _synthParameters.FilterType,
+                cutoffHz: _synthParameters.FilterCutoffHz,
+                resonance: _synthParameters.FilterResonance,
+                spectrumColor: _accentStrongColor,
+                responseColor: _accentColor,
+                borderColor: _borderColor,
+                labelColor: _mutedTextColor);
         }
 
         int displayMidiNote = _synthEngine.DisplayMidiNote;

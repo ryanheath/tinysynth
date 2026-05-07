@@ -305,6 +305,212 @@ internal static class SynthRenderer
         }
     }
 
+    public static void DrawFilterAnalysis(
+        Rectangle bounds,
+        float[] samples,
+        int writeIndex,
+        int sampleRate,
+        FilterType filterType,
+        float cutoffHz,
+        float resonance,
+        Color spectrumColor,
+        Color responseColor,
+        Color borderColor,
+        Color labelColor)
+    {
+        Graphics.DrawText("Filter analysis", (int)bounds.X + 18, (int)bounds.Y + 16, 22, labelColor);
+        Graphics.DrawText("Recent output spectrum", (int)bounds.X + 18, (int)bounds.Y + 42, 18, labelColor);
+
+        Rectangle graphBounds = new(bounds.X + 18, bounds.Y + 76, bounds.Width - 36, bounds.Height - 94);
+        Graphics.DrawRectangleRec(graphBounds, new Color(246, 249, 255, 255));
+        Graphics.DrawRectangleLinesEx(graphBounds, 1f, borderColor);
+
+        DrawFilterGrid(graphBounds, borderColor, labelColor);
+        DrawSpectrumCurve(graphBounds, samples, writeIndex, sampleRate, spectrumColor);
+        DrawFilterResponseCurve(graphBounds, sampleRate, filterType, cutoffHz, resonance, responseColor);
+    }
+
+    private static void DrawFilterGrid(Rectangle graphBounds, Color borderColor, Color labelColor)
+    {
+        float[] normalizedFrequencies = [0f, 0.25f, 0.5f, 0.75f, 1f];
+        string[] frequencyLabels = ["20", "100", "1k", "5k", "20k"];
+
+        for (int i = 0; i < normalizedFrequencies.Length; i++)
+        {
+            float x = graphBounds.X + (graphBounds.Width * normalizedFrequencies[i]);
+            Graphics.DrawLineV(
+                new Vector2(x, graphBounds.Y),
+                new Vector2(x, graphBounds.Y + graphBounds.Height),
+                new Color(225, 231, 242, 255));
+            Graphics.DrawText(frequencyLabels[i], (int)x - 14, (int)graphBounds.Y + (int)graphBounds.Height + 6, 16, labelColor);
+        }
+
+        for (int i = 1; i < 4; i++)
+        {
+            float y = graphBounds.Y + ((graphBounds.Height / 4f) * i);
+            Graphics.DrawLineV(
+                new Vector2(graphBounds.X, y),
+                new Vector2(graphBounds.X + graphBounds.Width, y),
+                new Color(225, 231, 242, 255));
+        }
+
+        Graphics.DrawText("0 dB", (int)graphBounds.X + 8, (int)graphBounds.Y + 6, 16, labelColor);
+        Graphics.DrawText("-48 dB", (int)graphBounds.X + 8, (int)graphBounds.Y + (int)graphBounds.Height - 22, 16, labelColor);
+    }
+
+    private static void DrawSpectrumCurve(Rectangle graphBounds, float[] samples, int writeIndex, int sampleRate, Color spectrumColor)
+    {
+        const int analysisSize = 256;
+        const int pointCount = 96;
+        const float minFrequency = 20f;
+
+        int availableSamples = Math.Min(samples.Length, analysisSize);
+        if (availableSamples < 32)
+        {
+            return;
+        }
+
+        Vector2? previousPoint = null;
+
+        for (int pointIndex = 0; pointIndex < pointCount; pointIndex++)
+        {
+            float normalizedX = pointIndex / (pointCount - 1f);
+            float frequency = minFrequency * MathF.Pow((sampleRate * 0.5f) / minFrequency, normalizedX);
+            float magnitude = MeasureMagnitude(samples, writeIndex, availableSamples, frequency, sampleRate);
+            float decibels = 20f * MathF.Log10(MathF.Max(magnitude, 0.00001f));
+            float normalizedMagnitude = Math.Clamp((decibels + 48f) / 48f, 0f, 1f);
+
+            Vector2 point = new(
+                graphBounds.X + (graphBounds.Width * normalizedX),
+                graphBounds.Y + graphBounds.Height - (graphBounds.Height * normalizedMagnitude));
+
+            if (previousPoint is Vector2 previous)
+            {
+                Graphics.DrawLineV(previous, point, spectrumColor);
+            }
+
+            previousPoint = point;
+        }
+    }
+
+    private static float MeasureMagnitude(float[] samples, int writeIndex, int sampleCount, float frequency, int sampleRate)
+    {
+        float real = 0f;
+        float imaginary = 0f;
+
+        for (int i = 0; i < sampleCount; i++)
+        {
+            int sampleIndex = (writeIndex - sampleCount + i + samples.Length) % samples.Length;
+            float sample = samples[sampleIndex];
+            float window = 0.5f - (0.5f * MathF.Cos(MathF.Tau * i / (sampleCount - 1f)));
+            float phase = MathF.Tau * frequency * i / sampleRate;
+            float weightedSample = sample * window;
+
+            real += weightedSample * MathF.Cos(phase);
+            imaginary -= weightedSample * MathF.Sin(phase);
+        }
+
+        return MathF.Sqrt((real * real) + (imaginary * imaginary)) / sampleCount;
+    }
+
+    private static void DrawFilterResponseCurve(Rectangle graphBounds, int sampleRate, FilterType filterType, float cutoffHz, float resonance, Color responseColor)
+    {
+        const int pointCount = 96;
+        const float minFrequency = 20f;
+
+        Vector2? previousPoint = null;
+
+        for (int pointIndex = 0; pointIndex < pointCount; pointIndex++)
+        {
+            float normalizedX = pointIndex / (pointCount - 1f);
+            float frequency = minFrequency * MathF.Pow((sampleRate * 0.5f) / minFrequency, normalizedX);
+            float magnitude = CalculateFilterResponseMagnitude(sampleRate, filterType, cutoffHz, resonance, frequency);
+            float decibels = 20f * MathF.Log10(MathF.Max(magnitude, 0.00001f));
+            float normalizedMagnitude = Math.Clamp((decibels + 48f) / 48f, 0f, 1f);
+
+            Vector2 point = new(
+                graphBounds.X + (graphBounds.Width * normalizedX),
+                graphBounds.Y + graphBounds.Height - (graphBounds.Height * normalizedMagnitude));
+
+            if (previousPoint is Vector2 previous)
+            {
+                Graphics.DrawLineEx(previous, point, 2f, responseColor);
+            }
+
+            previousPoint = point;
+        }
+    }
+
+    private static float CalculateFilterResponseMagnitude(int sampleRate, FilterType filterType, float cutoffHz, float resonance, float frequency)
+    {
+        if (filterType == FilterType.Off)
+        {
+            return 1f;
+        }
+
+        cutoffHz = Math.Clamp(cutoffHz, 20f, sampleRate * 0.45f);
+        resonance = Math.Clamp(resonance, 0f, 1f);
+
+        float q = 0.707f + ((12f - 0.707f) * resonance);
+        float omega = MathF.Tau * cutoffHz / sampleRate;
+        float sinOmega = MathF.Sin(omega);
+        float cosOmega = MathF.Cos(omega);
+        float alpha = sinOmega / (2f * q);
+
+        float b0;
+        float b1;
+        float b2;
+        float a0 = 1f + alpha;
+        float a1 = -2f * cosOmega;
+        float a2 = 1f - alpha;
+
+        switch (filterType)
+        {
+            case FilterType.LowPass:
+                b0 = (1f - cosOmega) * 0.5f;
+                b1 = 1f - cosOmega;
+                b2 = (1f - cosOmega) * 0.5f;
+                break;
+
+            case FilterType.HighPass:
+                b0 = (1f + cosOmega) * 0.5f;
+                b1 = -(1f + cosOmega);
+                b2 = (1f + cosOmega) * 0.5f;
+                break;
+
+            case FilterType.BandPass:
+                b0 = alpha;
+                b1 = 0f;
+                b2 = -alpha;
+                break;
+
+            default:
+                return 1f;
+        }
+
+        float normalizedB0 = b0 / a0;
+        float normalizedB1 = b1 / a0;
+        float normalizedB2 = b2 / a0;
+        float normalizedA1 = a1 / a0;
+        float normalizedA2 = a2 / a0;
+
+        float theta = MathF.Tau * frequency / sampleRate;
+        float cosTheta = MathF.Cos(theta);
+        float sinTheta = MathF.Sin(theta);
+        float cosTwoTheta = MathF.Cos(theta * 2f);
+        float sinTwoTheta = MathF.Sin(theta * 2f);
+
+        float numeratorReal = normalizedB0 + (normalizedB1 * cosTheta) + (normalizedB2 * cosTwoTheta);
+        float numeratorImaginary = -(normalizedB1 * sinTheta) - (normalizedB2 * sinTwoTheta);
+        float denominatorReal = 1f + (normalizedA1 * cosTheta) + (normalizedA2 * cosTwoTheta);
+        float denominatorImaginary = -(normalizedA1 * sinTheta) - (normalizedA2 * sinTwoTheta);
+
+        float numeratorMagnitude = MathF.Sqrt((numeratorReal * numeratorReal) + (numeratorImaginary * numeratorImaginary));
+        float denominatorMagnitude = MathF.Sqrt((denominatorReal * denominatorReal) + (denominatorImaginary * denominatorImaginary));
+
+        return denominatorMagnitude <= 0.00001f ? 0f : numeratorMagnitude / denominatorMagnitude;
+    }
+
     public static void DrawKeyboard(
         PianoKeyLayout[] keys,
         IReadOnlySet<int> activeNotes,
