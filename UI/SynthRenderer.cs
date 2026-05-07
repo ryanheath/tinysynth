@@ -451,7 +451,7 @@ internal static class SynthRenderer
         cutoffHz = Math.Clamp(cutoffHz, 20f, sampleRate * 0.45f);
         resonance = Math.Clamp(resonance, 0f, 1f);
 
-        float q = 0.707f + ((12f - 0.707f) * resonance);
+        float q = 0.707f + ((8f - 0.707f) * resonance * resonance);
         float omega = MathF.Tau * cutoffHz / sampleRate;
         float sinOmega = MathF.Sin(omega);
         float cosOmega = MathF.Cos(omega);

@@ -13,7 +13,7 @@ internal static class LayoutCalculator
         float keyboardPanelHeight)
     {
         float availableHeight = screenHeight - (panelMargin * 2);
-        float minControlHeight = 360f;
+        float minControlHeight = 420f;
         float minWaveformHeight = 120f;
         float minKeyboardHeight = 150f;
         float extraHeight = MathF.Max(0f, availableHeight - (minControlHeight + minWaveformHeight + minKeyboardHeight + (panelGap * 2)));
@@ -30,13 +30,16 @@ internal static class LayoutCalculator
         float sliderRowTwoY = controlPanel.Y + 292;
         float sliderWidth = (controlPanel.Width - 40 - (18 * 4)) / 5f;
         float filterSliderY = controlPanel.Y + 236;
+        float filterSliderRowTwoY = controlPanel.Y + 292;
+        float filterSliderRowThreeY = controlPanel.Y + 348;
         float filterSliderWidth = 190f;
+        float filterFullWidth = (filterSliderWidth * 2f) + 18f;
         Rectangle modeButtonsArea = new(controlPanel.X + 20, controlPanel.Y + 66, 220, 36);
         Rectangle oscillatorButtonsArea = new(controlPanel.X + 20, controlPanel.Y + 118, 360, 36);
         Rectangle waveformButtonsArea = new(controlPanel.X + 20, controlPanel.Y + 184, 360, 36);
         Rectangle filterButtonsArea = new(controlPanel.X + 20, controlPanel.Y + 170, 420, 36);
-        Rectangle filterAnalysisArea = new(controlPanel.X + 20 + (filterSliderWidth * 2f) + 56f, controlPanel.Y + 108, controlPanel.Width - ((20 + (filterSliderWidth * 2f) + 56f) + 20), controlPanel.Height - 128);
+        Rectangle filterAnalysisArea = new(controlPanel.X + 20 + filterFullWidth + 38f, controlPanel.Y + 108, controlPanel.Width - ((20 + filterFullWidth + 38f) + 20), controlPanel.Height - 128);
 
-        return new LayoutMetrics(controlPanel, waveformPanel, keyboardPanel, modeButtonsArea, oscillatorButtonsArea, filterButtonsArea, filterAnalysisArea, sliderRowOneY, sliderRowTwoY, sliderWidth, filterSliderY, filterSliderWidth, waveformButtonsArea);
+        return new LayoutMetrics(controlPanel, waveformPanel, keyboardPanel, modeButtonsArea, oscillatorButtonsArea, filterButtonsArea, filterAnalysisArea, sliderRowOneY, sliderRowTwoY, sliderWidth, filterSliderY, filterSliderRowTwoY, filterSliderRowThreeY, filterSliderWidth, filterFullWidth, waveformButtonsArea);
     }
 }

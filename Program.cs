@@ -4,8 +4,8 @@ using System.Runtime.InteropServices;
 using TinySynth.App;
 using static Raylib_CSharp.Time;
 
-const int screenWidth = 1200;
-const int screenHeight = 720;
+const int screenWidth = 1440;
+const int screenHeight = 860;
 const int sampleRate = 44100;
 const int audioBufferSize = 2048;
 const int keyboardStartMidi = 48;
@@ -13,7 +13,7 @@ const int keyboardNoteCount = 49;
 const float masterGain = 0.22f;
 const float panelGap = 20f;
 const float panelMargin = 20f;
-const float controlPanelHeight = 360f;
+const float controlPanelHeight = 420f;
 const float keyboardPanelHeight = 180f;
 
 float[] audioBuffer = new float[audioBufferSize];

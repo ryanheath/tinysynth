@@ -14,5 +14,8 @@ internal readonly record struct LayoutMetrics(
     float SliderRowTwoY,
     float SliderWidth,
     float FilterSliderY,
+    float FilterSliderRowTwoY,
+    float FilterSliderRowThreeY,
     float FilterSliderWidth,
+    float FilterFullWidth,
     Rectangle WaveformButtonsArea);

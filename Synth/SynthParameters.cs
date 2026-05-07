@@ -20,6 +20,12 @@ internal sealed class SynthParameters
 
     public float FilterResonance { get; set; } = 0.15f;
 
+    public float FilterEnvelopeAmount { get; set; } = 0f;
+
+    public float FilterLfoDepth { get; set; } = 0f;
+
+    public float FilterLfoRateHz { get; set; } = 2.5f;
+
     public OscillatorParameters GetOscillator(int index)
     {
         return _oscillators[Math.Clamp(index, 0, _oscillators.Length - 1)];

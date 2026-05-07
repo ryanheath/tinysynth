@@ -42,6 +42,7 @@ internal sealed class TinySynthController
     private readonly float _panelMargin;
     private readonly float _controlPanelHeight;
     private readonly float _keyboardPanelHeight;
+    private readonly int _sampleRate;
     private readonly AudioStream _audioStream;
     private readonly IntPtr _audioBufferPointer;
     private readonly float[] _audioBuffer;
@@ -96,6 +97,7 @@ internal sealed class TinySynthController
         _panelMargin = panelMargin;
         _controlPanelHeight = controlPanelHeight;
         _keyboardPanelHeight = keyboardPanelHeight;
+        _sampleRate = sampleRate;
         _synthParameters = new SynthParameters();
         _synthEngine = new SynthEngine(sampleRate, masterGain, keyboardStartMidi, voiceCount: 4);
         _masterVolume = masterGain;
@@ -140,7 +142,11 @@ internal sealed class TinySynthController
         float sliderRowTwoY = layout.SliderRowTwoY;
         float sliderWidth = layout.SliderWidth;
         float filterSliderY = layout.FilterSliderY;
+        float filterSliderRowTwoY = layout.FilterSliderRowTwoY;
+        float filterSliderRowThreeY = layout.FilterSliderRowThreeY;
         float filterSliderWidth = layout.FilterSliderWidth;
+        float filterFullWidth = layout.FilterFullWidth;
+        float maxFilterCutoffHz = MathF.Max(20f, _sampleRate * 0.45f);
         Rectangle filterAnalysisArea = layout.FilterAnalysisArea;
         Rectangle holdPedalBounds = new(keyboardPanel.X + keyboardPanel.Width - 190, keyboardPanel.Y + 12, 192, 24);
         Rectangle masterVolumeBounds = new(keyboardPanel.X + keyboardPanel.Width - 400, keyboardPanel.Y + 12, 180, 20);
@@ -401,16 +407,18 @@ internal sealed class TinySynthController
             Graphics.DrawText("Filter routing", (int)controlPanel.X + 20, (int)controlPanel.Y + 138, 18, _mutedTextColor);
             _synthParameters.FilterType = SynthRenderer.DrawFilterButtons(layout.FilterButtonsArea, _synthParameters.FilterType, mousePosition, mousePressed, _panelColor, _borderColor, _accentSoftColor, _accentStrongColor, _textColor);
 
-            _synthParameters.FilterCutoffHz = SynthRenderer.DrawSlider(
+            float normalizedCutoff = GetLogNormalizedFrequency(_synthParameters.FilterCutoffHz, 20f, maxFilterCutoffHz);
+
+            normalizedCutoff = SynthRenderer.DrawSlider(
                 index: 10,
                 activeSlider: ref _activeSlider,
                 enabled: _synthParameters.FilterType != FilterType.Off,
                 label: "Cutoff",
                 valueLabel: $"{_synthParameters.FilterCutoffHz:0} Hz",
                 bounds: new Rectangle(controlPanel.X + 20, filterSliderY, filterSliderWidth, 20),
-                value: _synthParameters.FilterCutoffHz,
-                minValue: 20f,
-                maxValue: 18_000f,
+                value: normalizedCutoff,
+                minValue: 0f,
+                maxValue: 1f,
                 mousePosition: mousePosition,
                 mousePressed: mousePressed,
                 mouseDown: mouseDown,
@@ -420,6 +428,8 @@ internal sealed class TinySynthController
                 panelColor: _panelColor,
                 textColor: _textColor,
                 mutedTextColor: _mutedTextColor);
+
+            _synthParameters.FilterCutoffHz = GetFrequencyFromLogNormalized(normalizedCutoff, 20f, maxFilterCutoffHz);
 
             _synthParameters.FilterResonance = SynthRenderer.DrawSlider(
                 index: 11,
@@ -441,11 +451,71 @@ internal sealed class TinySynthController
                 textColor: _textColor,
                 mutedTextColor: _mutedTextColor);
 
+            _synthParameters.FilterEnvelopeAmount = SynthRenderer.DrawSlider(
+                index: 12,
+                activeSlider: ref _activeSlider,
+                enabled: _synthParameters.FilterType != FilterType.Off,
+                label: "Env amt",
+                valueLabel: $"{_synthParameters.FilterEnvelopeAmount:0.00}x",
+                bounds: new Rectangle(controlPanel.X + 20, filterSliderRowTwoY, filterSliderWidth, 20),
+                value: _synthParameters.FilterEnvelopeAmount,
+                minValue: -2.00f,
+                maxValue: 2.00f,
+                mousePosition: mousePosition,
+                mousePressed: mousePressed,
+                mouseDown: mouseDown,
+                accentColor: _accentColor,
+                accentSoftColor: _accentSoftColor,
+                borderColor: _borderColor,
+                panelColor: _panelColor,
+                textColor: _textColor,
+                mutedTextColor: _mutedTextColor);
+
+            _synthParameters.FilterLfoDepth = SynthRenderer.DrawSlider(
+                index: 13,
+                activeSlider: ref _activeSlider,
+                enabled: _synthParameters.FilterType != FilterType.Off,
+                label: "LFO depth",
+                valueLabel: $"{_synthParameters.FilterLfoDepth:0.00}x",
+                bounds: new Rectangle(controlPanel.X + 20 + filterSliderWidth + 18, filterSliderRowTwoY, filterSliderWidth, 20),
+                value: _synthParameters.FilterLfoDepth,
+                minValue: 0.00f,
+                maxValue: 2.00f,
+                mousePosition: mousePosition,
+                mousePressed: mousePressed,
+                mouseDown: mouseDown,
+                accentColor: _accentColor,
+                accentSoftColor: _accentSoftColor,
+                borderColor: _borderColor,
+                panelColor: _panelColor,
+                textColor: _textColor,
+                mutedTextColor: _mutedTextColor);
+
+            _synthParameters.FilterLfoRateHz = SynthRenderer.DrawSlider(
+                index: 14,
+                activeSlider: ref _activeSlider,
+                enabled: _synthParameters.FilterType != FilterType.Off,
+                label: "LFO rate",
+                valueLabel: $"{_synthParameters.FilterLfoRateHz:0.0}Hz",
+                bounds: new Rectangle(controlPanel.X + 20, filterSliderRowThreeY, filterFullWidth, 20),
+                value: _synthParameters.FilterLfoRateHz,
+                minValue: 0.10f,
+                maxValue: 12.00f,
+                mousePosition: mousePosition,
+                mousePressed: mousePressed,
+                mouseDown: mouseDown,
+                accentColor: _accentColor,
+                accentSoftColor: _accentSoftColor,
+                borderColor: _borderColor,
+                panelColor: _panelColor,
+                textColor: _textColor,
+                mutedTextColor: _mutedTextColor);
+
             SynthRenderer.DrawFilterAnalysis(
                 filterAnalysisArea,
                 _scopeBuffer,
                 _scopeWriteIndex,
-                sampleRate: 44100,
+                sampleRate: _sampleRate,
                 filterType: _synthParameters.FilterType,
                 cutoffHz: _synthParameters.FilterCutoffHz,
                 resonance: _synthParameters.FilterResonance,
@@ -575,6 +645,28 @@ internal sealed class TinySynthController
         {
             _previousPhysicalMidiNotes.Add(note);
         }
+    }
+
+    private static float GetLogNormalizedFrequency(float frequency, float minFrequency, float maxFrequency)
+    {
+        minFrequency = MathF.Max(minFrequency, 0.0001f);
+        maxFrequency = MathF.Max(maxFrequency, minFrequency);
+        frequency = Math.Clamp(frequency, minFrequency, maxFrequency);
+
+        float minLog = MathF.Log(minFrequency);
+        float maxLog = MathF.Log(maxFrequency);
+        return (MathF.Log(frequency) - minLog) / (maxLog - minLog);
+    }
+
+    private static float GetFrequencyFromLogNormalized(float normalizedValue, float minFrequency, float maxFrequency)
+    {
+        minFrequency = MathF.Max(minFrequency, 0.0001f);
+        maxFrequency = MathF.Max(maxFrequency, minFrequency);
+        normalizedValue = Math.Clamp(normalizedValue, 0f, 1f);
+
+        float minLog = MathF.Log(minFrequency);
+        float maxLog = MathF.Log(maxFrequency);
+        return MathF.Exp(minLog + ((maxLog - minLog) * normalizedValue));
     }
 
     private static void GetPressedKeyboardMidiNotes(HashSet<int> pressedNotes)

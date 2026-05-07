@@ -7,6 +7,7 @@ internal sealed class SynthVoice
     private readonly OscillatorState[] _oscillators;
 
     private int _activeOscillatorCount;
+    private float _filterLfoPhase;
     private float _filterInput1;
     private float _filterInput2;
     private float _filterOutput1;
@@ -76,6 +77,7 @@ internal sealed class SynthVoice
 
         if (!isAudible || forceRestart)
         {
+            _filterLfoPhase = 0f;
             ResetFilterState();
         }
 
@@ -158,21 +160,21 @@ internal sealed class SynthVoice
         }
 
         sample /= MathF.Sqrt(enabledOscillatorCount);
-        sample = ProcessFilter(sample, parameters);
+        sample = ProcessFilter(sample, parameters, deltaTime);
 
         return sample * _masterGain;
     }
 
-    private float ProcessFilter(float inputSample, SynthParameters parameters)
+    private float ProcessFilter(float inputSample, SynthParameters parameters, float deltaTime)
     {
         if (parameters.FilterType == FilterType.Off)
         {
             return inputSample;
         }
 
-        float cutoffHz = Math.Clamp(parameters.FilterCutoffHz, 20f, _sampleRate * 0.45f);
+        float cutoffHz = GetModulatedFilterCutoffHz(parameters, deltaTime);
         float resonance = Math.Clamp(parameters.FilterResonance, 0f, 1f);
-        float q = 0.707f + ((12f - 0.707f) * resonance);
+        float q = 0.707f + ((8f - 0.707f) * resonance * resonance);
         float omega = MathF.Tau * cutoffHz / _sampleRate;
         float sinOmega = MathF.Sin(omega);
         float cosOmega = MathF.Cos(omega);
@@ -227,6 +229,41 @@ internal sealed class SynthVoice
         _filterOutput1 = outputSample;
 
         return outputSample;
+    }
+
+    private float GetModulatedFilterCutoffHz(SynthParameters parameters, float deltaTime)
+    {
+        float baseCutoffHz = Math.Clamp(parameters.FilterCutoffHz, 20f, _sampleRate * 0.45f);
+        float envelopeLevel = GetAverageEnvelopeLevel();
+        float envelopeOctaves = parameters.FilterEnvelopeAmount * envelopeLevel;
+
+        if (parameters.FilterLfoRateHz > 0f)
+        {
+            _filterLfoPhase += parameters.FilterLfoRateHz * deltaTime;
+            _filterLfoPhase -= MathF.Floor(_filterLfoPhase);
+        }
+
+        float lfoValue = MathF.Sin(_filterLfoPhase * MathF.Tau);
+        float lfoOctaves = parameters.FilterLfoDepth * lfoValue;
+        float modulatedCutoffHz = baseCutoffHz * MathF.Pow(2f, envelopeOctaves + lfoOctaves);
+
+        return Math.Clamp(modulatedCutoffHz, 20f, _sampleRate * 0.45f);
+    }
+
+    private float GetAverageEnvelopeLevel()
+    {
+        float totalEnvelope = 0f;
+        int enabledOscillatorCount = 0;
+
+        for (int i = 0; i < _activeOscillatorCount; i++)
+        {
+            totalEnvelope += _oscillators[i].EnvelopeLevel;
+            enabledOscillatorCount++;
+        }
+
+        return enabledOscillatorCount == 0
+            ? 0f
+            : totalEnvelope / enabledOscillatorCount;
     }
 
     private void ResetFilterState()
