@@ -50,6 +50,36 @@ internal sealed class SynthParameters
 
     public float DelayFeedback { get; set; } = 0.30f;
 
+    public void ResetToDefaults()
+    {
+        FilterType = FilterType.Off;
+        FilterCutoffHz = 12_000f;
+        FilterResonance = 0.15f;
+        FilterEnvelopeAmount = 0f;
+        FilterLfoDepth = 0f;
+        FilterLfoRateHz = 2.5f;
+
+        ChorusType = ChorusType.Off;
+        ChorusMix = 0f;
+        ChorusRateHz = 0.8f;
+        ChorusDepth = 0.35f;
+
+        ReverbType = ReverbType.Off;
+        ReverbMix = 0f;
+        ReverbSize = 0.45f;
+        ReverbDamping = 0.35f;
+
+        DelayType = DelayType.Off;
+        DelayMix = 0f;
+        DelayTimeSeconds = 0.28f;
+        DelayFeedback = 0.30f;
+
+        foreach (OscillatorParameters oscillator in _oscillators)
+        {
+            oscillator.ResetToDefaults();
+        }
+    }
+
     public OscillatorParameters GetOscillator(int index)
     {
         return _oscillators[Math.Clamp(index, 0, _oscillators.Length - 1)];
@@ -83,4 +113,21 @@ internal sealed class OscillatorParameters
     public float SustainLevel { get; set; } = 0.72f;
 
     public float ReleaseSeconds { get; set; } = 0.30f;
+
+    public void ResetToDefaults()
+    {
+        Enabled = true;
+        Waveform = Waveform.Sine;
+        Gain = 0.80f;
+        DetuneCents = 0f;
+        GlideSeconds = 0f;
+        VibratoDepthCents = 0f;
+        VibratoRateHz = 5f;
+        PulseWidth = 0.50f;
+        PwmRateHz = 0f;
+        AttackSeconds = 0.05f;
+        DecaySeconds = 0.18f;
+        SustainLevel = 0.72f;
+        ReleaseSeconds = 0.30f;
+    }
 }

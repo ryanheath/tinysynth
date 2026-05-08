@@ -110,7 +110,7 @@ internal static class SynthRenderer
         Color selectedBorderColor,
         Color textColor)
     {
-        string[] labels = ["Oscillator", "Filter", "FX"];
+        string[] labels = ["Presets", "Oscillator", "Filter", "FX"];
         float buttonGap = 10f;
         float buttonWidth = (area.Width - (buttonGap * (labels.Length - 1))) / labels.Length;
 
@@ -234,6 +234,87 @@ internal static class SynthRenderer
             DelayType.PingPong => "Ping-pong",
             _ => value.ToString()
         });
+    }
+
+    public static int DrawPresetFamilyButtons(
+        Rectangle area,
+        IReadOnlyList<GmInstrumentFamily> families,
+        int selectedIndex,
+        Vector2 mousePosition,
+        bool mousePressed,
+        Color panelColor,
+        Color borderColor,
+        Color selectedColor,
+        Color selectedBorderColor,
+        Color textColor)
+    {
+        const int columns = 4;
+        const float gap = 10f;
+        int rows = (int)MathF.Ceiling(families.Count / (float)columns);
+        float buttonWidth = (area.Width - (gap * (columns - 1))) / columns;
+        float buttonHeight = (area.Height - (gap * (rows - 1))) / rows;
+
+        for (int i = 0; i < families.Count; i++)
+        {
+            int column = i % columns;
+            int row = i / columns;
+            Rectangle buttonBounds = new(area.X + (column * (buttonWidth + gap)), area.Y + (row * (buttonHeight + gap)), buttonWidth, buttonHeight);
+            bool isSelected = selectedIndex == i;
+            bool isHovered = Contains(buttonBounds, mousePosition);
+            string label = FormatFamilyLabel(families[i]);
+            Color fill = isSelected ? selectedColor : (isHovered ? new Color(245, 248, 255, 255) : panelColor);
+            Color outline = isSelected ? selectedBorderColor : borderColor;
+            const int fontSize = 18;
+
+            Graphics.DrawRectangleRec(buttonBounds, fill);
+            Graphics.DrawRectangleLinesEx(buttonBounds, isSelected ? 2.5f : 1f, outline);
+            DrawCenteredWrappedLabel(buttonBounds, label, fontSize, textColor);
+
+            if (mousePressed && isHovered)
+            {
+                selectedIndex = i;
+            }
+        }
+
+        return selectedIndex;
+    }
+
+    public static int DrawPresetButtons(
+        Rectangle area,
+        IReadOnlyList<GmPreset> presets,
+        int selectedIndex,
+        Vector2 mousePosition,
+        bool mousePressed,
+        Color panelColor,
+        Color borderColor,
+        Color selectedColor,
+        Color selectedBorderColor,
+        Color textColor,
+        Color mutedTextColor)
+    {
+        float gap = 12f;
+        float buttonHeight = (area.Height - gap) / Math.Max(1, presets.Count);
+
+        for (int i = 0; i < presets.Count; i++)
+        {
+            Rectangle buttonBounds = new(area.X, area.Y + (i * (buttonHeight + gap)), area.Width, buttonHeight);
+            bool isSelected = selectedIndex == i;
+            bool isHovered = Contains(buttonBounds, mousePosition);
+            Color fill = isSelected ? selectedColor : (isHovered ? new Color(245, 248, 255, 255) : panelColor);
+            Color outline = isSelected ? selectedBorderColor : borderColor;
+
+            Graphics.DrawRectangleRec(buttonBounds, fill);
+            Graphics.DrawRectangleLinesEx(buttonBounds, isSelected ? 2.5f : 1f, outline);
+            Graphics.DrawText(presets[i].Name, (int)buttonBounds.X + 14, (int)buttonBounds.Y + 12, 20, textColor);
+            DrawWrappedText(presets[i].Description, buttonBounds.X + 14, buttonBounds.Y + 40, buttonBounds.Width - 28, 16, mutedTextColor);
+
+            if (mousePressed && isHovered)
+            {
+                selectedIndex = i;
+            }
+        }
+
+        return selectedIndex;
     }
 
     public static float DrawSlider(
@@ -652,5 +733,60 @@ internal static class SynthRenderer
         }
 
         return currentValue;
+    }
+
+    private static string FormatFamilyLabel(GmInstrumentFamily family)
+    {
+        return family switch
+        {
+            GmInstrumentFamily.ChromaticPercussion => "Chromatic\nPerc.",
+            GmInstrumentFamily.SynthLead => "Synth\nLead",
+            GmInstrumentFamily.SynthPad => "Synth\nPad",
+            GmInstrumentFamily.SynthEffects => "Synth\nFX",
+            GmInstrumentFamily.SoundEffects => "Sound\nFX",
+            _ => family.ToString()
+        };
+    }
+
+    private static void DrawCenteredWrappedLabel(Rectangle bounds, string label, int fontSize, Color textColor)
+    {
+        string[] lines = label.Split('\n');
+        float totalHeight = lines.Length * fontSize;
+        float startY = bounds.Y + ((bounds.Height - totalHeight) / 2f) - 2f;
+
+        for (int i = 0; i < lines.Length; i++)
+        {
+            int lineWidth = TextManager.MeasureText(lines[i], fontSize);
+            int textX = (int)(bounds.X + ((bounds.Width - lineWidth) / 2f));
+            int textY = (int)(startY + (i * fontSize));
+            Graphics.DrawText(lines[i], textX, textY, fontSize, textColor);
+        }
+    }
+
+    private static void DrawWrappedText(string text, float x, float y, float maxWidth, int fontSize, Color textColor)
+    {
+        string[] words = text.Split(' ');
+        string currentLine = string.Empty;
+        float currentY = y;
+
+        foreach (string word in words)
+        {
+            string candidate = string.IsNullOrEmpty(currentLine) ? word : $"{currentLine} {word}";
+            if (!string.IsNullOrEmpty(currentLine) && TextManager.MeasureText(candidate, fontSize) > maxWidth)
+            {
+                Graphics.DrawText(currentLine, (int)x, (int)currentY, fontSize, textColor);
+                currentLine = word;
+                currentY += fontSize + 2f;
+            }
+            else
+            {
+                currentLine = candidate;
+            }
+        }
+
+        if (!string.IsNullOrEmpty(currentLine))
+        {
+            Graphics.DrawText(currentLine, (int)x, (int)currentY, fontSize, textColor);
+        }
     }
 }

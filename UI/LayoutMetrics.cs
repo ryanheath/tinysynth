@@ -7,6 +7,8 @@ internal readonly record struct LayoutMetrics(
     Rectangle WaveformPanel,
     Rectangle KeyboardPanel,
     Rectangle ModeButtonsArea,
+    Rectangle PresetFamilyArea,
+    Rectangle PresetOptionArea,
     Rectangle OscillatorButtonsArea,
     Rectangle FilterButtonsArea,
     Rectangle FxChorusButtonsArea,

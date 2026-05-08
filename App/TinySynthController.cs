@@ -13,6 +13,7 @@ namespace TinySynth.App;
 
 internal enum ParameterSection
 {
+    Presets,
     Oscillator,
     Filter,
     Fx
@@ -69,10 +70,12 @@ internal sealed class TinySynthController
 
     private int _activePointerMidiNote = -1;
     private int _activeOscillatorIndex;
+    private int _activePresetFamilyIndex;
+    private int _activePresetIndex;
     private int _activeSlider = -1;
     private int _scopeWriteIndex;
     private bool _holdPedalEnabled;
-    private ParameterSection _activeParameterSection = ParameterSection.Oscillator;
+    private ParameterSection _activeParameterSection = ParameterSection.Presets;
     private float _masterVolume;
 
     public TinySynthController(
@@ -100,6 +103,7 @@ internal sealed class TinySynthController
         _keyboardPanelHeight = keyboardPanelHeight;
         _sampleRate = sampleRate;
         _synthParameters = new SynthParameters();
+        GmPresetCatalog.ApplyPreset(GmPresetCatalog.GetPresets(GmPresetCatalog.Families[_activePresetFamilyIndex])[_activePresetIndex], _synthParameters);
         _synthEngine = new SynthEngine(sampleRate, masterGain, keyboardStartMidi, voiceCount: 4);
         _masterVolume = masterGain;
     }
@@ -152,6 +156,8 @@ internal sealed class TinySynthController
         float fxSliderRowTwoY = layout.FxSliderRowTwoY;
         float fxSliderWidth = layout.FxSliderWidth;
         float fxFullWidth = layout.FxFullWidth;
+        IReadOnlyList<GmInstrumentFamily> presetFamilies = GmPresetCatalog.Families;
+        IReadOnlyList<GmPreset> visiblePresets = GmPresetCatalog.GetPresets(presetFamilies[_activePresetFamilyIndex]);
         float maxFilterCutoffHz = MathF.Max(20f, _sampleRate * 0.45f);
         Rectangle filterAnalysisArea = layout.FilterAnalysisArea;
         Rectangle holdPedalBounds = new(keyboardPanel.X + keyboardPanel.Width - 190, keyboardPanel.Y + 12, 192, 24);
@@ -194,7 +200,52 @@ internal sealed class TinySynthController
             _activeSlider = -1;
         }
 
-        if (_activeParameterSection == ParameterSection.Oscillator)
+        if (_activeParameterSection == ParameterSection.Presets)
+        {
+            Graphics.DrawText("GM presets", (int)controlPanel.X + 20, (int)controlPanel.Y + 112, 18, _mutedTextColor);
+
+            int previousFamilyIndex = _activePresetFamilyIndex;
+            _activePresetFamilyIndex = SynthRenderer.DrawPresetFamilyButtons(
+                layout.PresetFamilyArea,
+                presetFamilies,
+                _activePresetFamilyIndex,
+                mousePosition,
+                mousePressed,
+                _panelColor,
+                _borderColor,
+                _accentSoftColor,
+                _accentStrongColor,
+                _textColor);
+
+            if (previousFamilyIndex != _activePresetFamilyIndex)
+            {
+                _activePresetIndex = 0;
+                visiblePresets = GmPresetCatalog.GetPresets(presetFamilies[_activePresetFamilyIndex]);
+            }
+
+            visiblePresets = GmPresetCatalog.GetPresets(presetFamilies[_activePresetFamilyIndex]);
+            int previousPresetIndex = _activePresetIndex;
+            _activePresetIndex = SynthRenderer.DrawPresetButtons(
+                layout.PresetOptionArea,
+                visiblePresets,
+                _activePresetIndex,
+                mousePosition,
+                mousePressed,
+                _panelColor,
+                _borderColor,
+                _accentSoftColor,
+                _accentStrongColor,
+                _textColor,
+                _mutedTextColor);
+
+            if (previousPresetIndex != _activePresetIndex || (previousFamilyIndex != _activePresetFamilyIndex && visiblePresets.Count > 0))
+            {
+                GmPresetCatalog.ApplyPreset(visiblePresets[_activePresetIndex], _synthParameters);
+                _activeOscillatorIndex = 0;
+                _activeSlider = -1;
+            }
+        }
+        else if (_activeParameterSection == ParameterSection.Oscillator)
         {
             int previousOscillatorIndex = _activeOscillatorIndex;
             _activeOscillatorIndex = SynthRenderer.DrawOscillatorButtons(layout.OscillatorButtonsArea, _synthParameters.Oscillators, _activeOscillatorIndex, mousePosition, mousePressed, _panelColor, _borderColor, _accentSoftColor, _accentStrongColor, _textColor);
@@ -773,8 +824,8 @@ internal sealed class TinySynthController
         string noteStatus = displayMidiNote >= 0
             ? $"Playing {MidiUtilities.MidiToNoteName(displayMidiNote)}  •  {_synthEngine.DisplayFrequency:0.0} Hz  •  {_synthEngine.ActiveVoiceCount} voices"
             : "Click the piano keys or use ZSXDCVGBHNJM, from C4 to C5.";
-        Graphics.DrawText(noteStatus, (int)controlPanel.X + 410, (int)controlPanel.Y + 52, 20, _textColor);
-        Graphics.DrawText($"Envelope: {_synthEngine.DisplayEnvelopeStage}", (int)controlPanel.X + 410, (int)controlPanel.Y + 82, 18, _mutedTextColor);
+        Graphics.DrawText(noteStatus, (int)controlPanel.X + 470, (int)controlPanel.Y + 52, 20, _textColor);
+        Graphics.DrawText($"Envelope: {_synthEngine.DisplayEnvelopeStage}", (int)controlPanel.X + 470, (int)controlPanel.Y + 82, 18, _mutedTextColor);
 
         SynthRenderer.DrawWaveformScope(waveformPanel, _scopeBuffer, _scopeWriteIndex, _accentStrongColor, _borderColor, _mutedTextColor);
         Graphics.DrawText("Keyboard", (int)keyboardPanel.X + 18, (int)keyboardPanel.Y + 14, 22, _textColor);
