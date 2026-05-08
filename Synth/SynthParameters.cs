@@ -34,6 +34,8 @@ internal sealed class SynthParameters
 
     public float ChorusDepth { get; set; } = 0.35f;
 
+    public float ChorusTremoloDepth { get; set; } = 0f;
+
     public ReverbType ReverbType { get; set; } = ReverbType.Off;
 
     public float ReverbMix { get; set; } = 0f;
@@ -63,6 +65,7 @@ internal sealed class SynthParameters
         ChorusMix = 0f;
         ChorusRateHz = 0.8f;
         ChorusDepth = 0.35f;
+        ChorusTremoloDepth = 0f;
 
         ReverbType = ReverbType.Off;
         ReverbMix = 0f;
@@ -106,6 +109,8 @@ internal sealed class OscillatorParameters
 
     public float PwmRateHz { get; set; } = 0f;
 
+    public float Pan { get; set; } = 0f;
+
     public float AttackSeconds { get; set; } = 0.05f;
 
     public float DecaySeconds { get; set; } = 0.18f;
@@ -125,6 +130,7 @@ internal sealed class OscillatorParameters
         VibratoRateHz = 5f;
         PulseWidth = 0.50f;
         PwmRateHz = 0f;
+        Pan = 0f;
         AttackSeconds = 0.05f;
         DecaySeconds = 0.18f;
         SustainLevel = 0.72f;

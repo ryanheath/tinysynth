@@ -179,7 +179,7 @@ internal sealed class TinySynthController
         {
             _synthEngine.FillBuffer(_audioBuffer, _scopeBuffer, ref _scopeWriteIndex, _synthParameters);
             Marshal.Copy(_audioBuffer, 0, _audioBufferPointer, _audioBuffer.Length);
-            _audioStream.Update(_audioBufferPointer, _audioBuffer.Length);
+            _audioStream.Update(_audioBufferPointer, _audioBuffer.Length / 2);
         }
 
         Graphics.BeginDrawing();
@@ -498,6 +498,26 @@ internal sealed class TinySynthController
             textColor: _textColor,
             mutedTextColor: _mutedTextColor);
 
+            activeOscillator.Pan = SynthRenderer.DrawSlider(
+            index: 26,
+            activeSlider: ref _activeSlider,
+            enabled: activeOscillator.Enabled,
+            label: "Pan",
+            valueLabel: $"{activeOscillator.Pan:0.00}",
+            bounds: new Rectangle(controlPanel.X + 20 + ((sliderWidth + 18) * 2), sliderRowThreeY, sliderWidth, 20),
+            value: activeOscillator.Pan,
+            minValue: -1.00f,
+            maxValue: 1.00f,
+            mousePosition: mousePosition,
+            mousePressed: mousePressed,
+            mouseDown: mouseDown,
+            accentColor: _accentColor,
+            accentSoftColor: _accentSoftColor,
+            borderColor: _borderColor,
+            panelColor: _panelColor,
+            textColor: _textColor,
+            mutedTextColor: _mutedTextColor);
+
         }
         else if (_activeParameterSection == ParameterSection.Filter)
         {
@@ -688,6 +708,26 @@ internal sealed class TinySynthController
                 bounds: new Rectangle(controlPanel.X + 20, fxSliderRowTwoY + 56, fxSliderWidth, 20),
                 value: _synthParameters.ChorusDepth,
                 minValue: 0.05f,
+                maxValue: 1.00f,
+                mousePosition: mousePosition,
+                mousePressed: mousePressed,
+                mouseDown: mouseDown,
+                accentColor: _accentColor,
+                accentSoftColor: _accentSoftColor,
+                borderColor: _borderColor,
+                panelColor: _panelColor,
+                textColor: _textColor,
+                mutedTextColor: _mutedTextColor);
+
+            _synthParameters.ChorusTremoloDepth = SynthRenderer.DrawSlider(
+                index: 27,
+                activeSlider: ref _activeSlider,
+                enabled: chorusEnabled,
+                label: "Chorus trem",
+                valueLabel: $"{(_synthParameters.ChorusTremoloDepth * 100f):0}%",
+                bounds: new Rectangle(controlPanel.X + 20, fxSliderRowTwoY + 112, fxSliderWidth, 20),
+                value: _synthParameters.ChorusTremoloDepth,
+                minValue: 0.00f,
                 maxValue: 1.00f,
                 mousePosition: mousePosition,
                 mousePressed: mousePressed,

@@ -2,16 +2,18 @@ namespace TinySynth.Synth;
 
 internal sealed class SynthVoice
 {
+    private const int StereoChannelCount = 2;
+
     private readonly int _sampleRate;
     private float _masterGain;
     private readonly OscillatorState[] _oscillators;
 
     private int _activeOscillatorCount;
     private float _filterLfoPhase;
-    private float _filterInput1;
-    private float _filterInput2;
-    private float _filterOutput1;
-    private float _filterOutput2;
+    private readonly float[] _filterInput1 = new float[StereoChannelCount];
+    private readonly float[] _filterInput2 = new float[StereoChannelCount];
+    private readonly float[] _filterOutput1 = new float[StereoChannelCount];
+    private readonly float[] _filterOutput2 = new float[StereoChannelCount];
 
     public SynthVoice(int sampleRate, float masterGain, int defaultMidiNote)
     {
@@ -109,21 +111,24 @@ internal sealed class SynthVoice
 
     public void AddToBuffer(float[] audioBuffer, SynthParameters parameters)
     {
-        for (int i = 0; i < audioBuffer.Length; i++)
+        for (int i = 0; i < audioBuffer.Length; i += StereoChannelCount)
         {
-            audioBuffer[i] += NextSample(parameters);
+            (float left, float right) = NextSample(parameters);
+            audioBuffer[i] += left;
+            audioBuffer[i + 1] += right;
         }
     }
 
-    private float NextSample(SynthParameters parameters)
+    private (float Left, float Right) NextSample(SynthParameters parameters)
     {
         if (EnvelopeStage == EnvelopeStage.Idle || ActiveMidiNote < 0)
         {
-            return 0f;
+            return (0f, 0f);
         }
 
         float deltaTime = 1f / _sampleRate;
-        float sample = 0f;
+        float leftSample = 0f;
+        float rightSample = 0f;
         int enabledOscillatorCount = 0;
 
         for (int i = 0; i < _activeOscillatorCount; i++)
@@ -148,8 +153,11 @@ internal sealed class SynthVoice
 
             float effectiveFrequency = ApplyVibrato(oscillator.CurrentFrequency, deltaTime, oscillator, oscillatorParameters);
             float oscillatorSample = GetWaveSample(oscillator, oscillatorParameters, deltaTime);
+            float oscillatorLevel = oscillatorSample * oscillatorParameters.Gain * oscillator.EnvelopeLevel;
+            (float leftGain, float rightGain) = GetPanGains(oscillatorParameters.Pan);
 
-            sample += oscillatorSample * oscillatorParameters.Gain * oscillator.EnvelopeLevel;
+            leftSample += oscillatorLevel * leftGain;
+            rightSample += oscillatorLevel * rightGain;
             AdvancePhase(oscillator, effectiveFrequency);
         }
 
@@ -157,16 +165,17 @@ internal sealed class SynthVoice
 
         if (EnvelopeStage == EnvelopeStage.Idle || enabledOscillatorCount == 0)
         {
-            return 0f;
+            return (0f, 0f);
         }
 
-        sample /= MathF.Sqrt(enabledOscillatorCount);
-        sample = ProcessFilter(sample, parameters, deltaTime);
+        float normalization = 1f / MathF.Sqrt(enabledOscillatorCount);
+        leftSample = ProcessFilter(leftSample * normalization, parameters, deltaTime, channelIndex: 0);
+        rightSample = ProcessFilter(rightSample * normalization, parameters, deltaTime, channelIndex: 1);
 
-        return sample * _masterGain;
+        return (leftSample * _masterGain, rightSample * _masterGain);
     }
 
-    private float ProcessFilter(float inputSample, SynthParameters parameters, float deltaTime)
+    private float ProcessFilter(float inputSample, SynthParameters parameters, float deltaTime, int channelIndex)
     {
         if (parameters.FilterType == FilterType.Off)
         {
@@ -219,15 +228,15 @@ internal sealed class SynthVoice
         float normalizedA2 = a2 / a0;
 
         float outputSample = (normalizedB0 * inputSample)
-            + (normalizedB1 * _filterInput1)
-            + (normalizedB2 * _filterInput2)
-            - (normalizedA1 * _filterOutput1)
-            - (normalizedA2 * _filterOutput2);
+            + (normalizedB1 * _filterInput1[channelIndex])
+            + (normalizedB2 * _filterInput2[channelIndex])
+            - (normalizedA1 * _filterOutput1[channelIndex])
+            - (normalizedA2 * _filterOutput2[channelIndex]);
 
-        _filterInput2 = _filterInput1;
-        _filterInput1 = inputSample;
-        _filterOutput2 = _filterOutput1;
-        _filterOutput1 = outputSample;
+        _filterInput2[channelIndex] = _filterInput1[channelIndex];
+        _filterInput1[channelIndex] = inputSample;
+        _filterOutput2[channelIndex] = _filterOutput1[channelIndex];
+        _filterOutput1[channelIndex] = outputSample;
 
         return outputSample;
     }
@@ -269,10 +278,17 @@ internal sealed class SynthVoice
 
     private void ResetFilterState()
     {
-        _filterInput1 = 0f;
-        _filterInput2 = 0f;
-        _filterOutput1 = 0f;
-        _filterOutput2 = 0f;
+        Array.Clear(_filterInput1);
+        Array.Clear(_filterInput2);
+        Array.Clear(_filterOutput1);
+        Array.Clear(_filterOutput2);
+    }
+
+    private static (float Left, float Right) GetPanGains(float pan)
+    {
+        float normalizedPan = Math.Clamp(pan, -1f, 1f);
+        float angle = (normalizedPan + 1f) * (MathF.PI * 0.25f);
+        return (MathF.Cos(angle), MathF.Sin(angle));
     }
 
     private void UpdateFrequency(float deltaTime, OscillatorState oscillator, OscillatorParameters parameters)

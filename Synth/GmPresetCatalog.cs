@@ -13,7 +13,7 @@ internal static class GmPresetCatalog
         CreatePreset(GmInstrumentFamily.Piano, "Grand Piano", "Bright layered attack with short room ambience.", p => ConfigurePiano(p, bright: true, electric: false)),
         CreatePreset(GmInstrumentFamily.Piano, "Honky-Tonk", "Detuned midrange piano with a lively room.", p => ConfigurePiano(p, bright: false, electric: true)),
         CreatePreset(GmInstrumentFamily.ChromaticPercussion, "Celesta", "Bell-like sine shimmer with soft reverb.", p => ConfigureChromatic(p, metallic: false, vibraphone: false)),
-        CreatePreset(GmInstrumentFamily.ChromaticPercussion, "Vibraphone", "Rounded struck tone with chorus and tremble.", p => ConfigureChromatic(p, metallic: true, vibraphone: true)),
+        CreatePreset(GmInstrumentFamily.ChromaticPercussion, "Vibraphone", "Rounded struck tone with chorus and tremolo.", p => ConfigureChromatic(p, metallic: true, vibraphone: true)),
         CreatePreset(GmInstrumentFamily.Organ, "Drawbar Organ", "Full-bodied organ with chorus and long sustain.", p => ConfigureOrgan(p, church: false)),
         CreatePreset(GmInstrumentFamily.Organ, "Church Organ", "Wide sustained organ with hall bloom.", p => ConfigureOrgan(p, church: true)),
         CreatePreset(GmInstrumentFamily.Guitar, "Nylon Guitar", "Warm plucked guitar with soft attack and room.", p => ConfigureGuitar(p, electric: false, muted: false)),
@@ -66,8 +66,8 @@ internal static class GmPresetCatalog
 
     private static void ConfigurePiano(SynthParameters p, bool bright, bool electric)
     {
-        ConfigureOsc(p, 0, Waveform.Sine, bright ? 0.65f : 0.55f, 0f, 0.002f, 0.08f, 0.22f, 0.10f, 0.90f, 0.20f);
-        ConfigureOsc(p, 1, electric ? Waveform.Triangle : Waveform.Saw, 0.32f, electric ? 7f : 2f, 0f, 0.01f, 0.35f, 0.00f, 0.75f, 0.22f);
+        ConfigureOsc(p, 0, Waveform.Sine, bright ? 0.65f : 0.55f, 0f, 0.002f, 0.08f, 0.22f, 0.10f, 0.90f, 0.20f, pan: -0.10f);
+        ConfigureOsc(p, 1, electric ? Waveform.Triangle : Waveform.Saw, 0.32f, electric ? 7f : 2f, 0f, 0.01f, 0.35f, 0.00f, 0.75f, 0.22f, pan: 0.12f);
         ConfigureOsc(p, 2, Waveform.Noise, bright ? 0.06f : 0.03f, 0f, 0f, 0.001f, 0.05f, 0.00f, 0.00f, 0.05f);
         DisableOsc(p, 3);
         p.FilterType = FilterType.LowPass;
@@ -89,8 +89,8 @@ internal static class GmPresetCatalog
 
     private static void ConfigureChromatic(SynthParameters p, bool metallic, bool vibraphone)
     {
-        ConfigureOsc(p, 0, Waveform.Sine, 0.68f, 0f, vibraphone ? 15f : 0f, 0.004f, 0.80f, 0.00f, 0.00f, 1.40f);
-        ConfigureOsc(p, 1, metallic ? Waveform.Triangle : Waveform.Sine, 0.28f, 12f, vibraphone ? 0f : 0f, 0.002f, 0.65f, 0.00f, 0.00f, 1.10f);
+        ConfigureOsc(p, 0, Waveform.Sine, 0.68f, 0f, vibraphone ? 15f : 0f, 0.004f, 0.80f, 0.00f, 0.00f, 1.40f, pan: vibraphone ? -0.18f : -0.08f);
+        ConfigureOsc(p, 1, metallic ? Waveform.Triangle : Waveform.Sine, 0.28f, 12f, vibraphone ? 0f : 0f, 0.002f, 0.65f, 0.00f, 0.00f, 1.10f, pan: vibraphone ? 0.18f : 0.08f);
         DisableOsc(p, 2);
         DisableOsc(p, 3);
         p.FilterType = FilterType.LowPass;
@@ -106,14 +106,15 @@ internal static class GmPresetCatalog
             p.ChorusMix = 0.12f;
             p.ChorusRateHz = 1.6f;
             p.ChorusDepth = 0.18f;
+            p.ChorusTremoloDepth = 0.26f;
         }
     }
 
     private static void ConfigureOrgan(SynthParameters p, bool church)
     {
-        ConfigureOsc(p, 0, Waveform.Square, 0.42f, 0f, 0f, 0.01f, 0.08f, 0.90f, 0.85f, 0.50f, pulseWidth: 0.48f, pwmRate: church ? 0.10f : 0f);
+        ConfigureOsc(p, 0, Waveform.Square, 0.42f, 0f, 0f, 0.01f, 0.08f, 0.90f, 0.85f, 0.50f, pulseWidth: 0.48f, pwmRate: church ? 0.10f : 0f, pan: -0.32f);
         ConfigureOsc(p, 1, Waveform.Sine, 0.28f, 1200f, 0f, 0.01f, 0.06f, 0.88f, 0.82f, 0.52f);
-        ConfigureOsc(p, 2, Waveform.Square, 0.20f, -1200f, 0f, 0.01f, 0.07f, 0.86f, 0.80f, 0.48f, pulseWidth: 0.40f, pwmRate: church ? 0.12f : 0f);
+        ConfigureOsc(p, 2, Waveform.Square, 0.20f, -1200f, 0f, 0.01f, 0.07f, 0.86f, 0.80f, 0.48f, pulseWidth: 0.40f, pwmRate: church ? 0.12f : 0f, pan: 0.32f);
         DisableOsc(p, 3);
         p.FilterType = FilterType.LowPass;
         p.FilterCutoffHz = church ? 3400f : 4200f;
@@ -122,6 +123,7 @@ internal static class GmPresetCatalog
         p.ChorusMix = church ? 0.16f : 0.20f;
         p.ChorusRateHz = 0.35f;
         p.ChorusDepth = church ? 0.40f : 0.26f;
+        p.ChorusTremoloDepth = church ? 0.12f : 0.08f;
         p.ReverbType = church ? ReverbType.Hall : ReverbType.Room;
         p.ReverbMix = church ? 0.30f : 0.14f;
         p.ReverbSize = church ? 0.82f : 0.35f;
@@ -153,8 +155,8 @@ internal static class GmPresetCatalog
 
     private static void ConfigureBass(SynthParameters p, bool synth)
     {
-        ConfigureOsc(p, 0, synth ? Waveform.Saw : Waveform.Square, 0.58f, 0f, 0f, 0.003f, 0.12f, 0.65f, 0.52f, 0.18f, pulseWidth: synth ? 0.50f : 0.38f, pwmRate: synth ? 0f : 0.4f);
-        ConfigureOsc(p, 1, Waveform.Sine, 0.34f, -1200f, 0f, 0.003f, 0.08f, 0.70f, 0.56f, 0.22f);
+        ConfigureOsc(p, 0, synth ? Waveform.Saw : Waveform.Square, 0.58f, 0f, 0f, 0.003f, 0.12f, 0.65f, 0.52f, 0.18f, pulseWidth: synth ? 0.50f : 0.38f, pwmRate: synth ? 0f : 0.4f, pan: synth ? -0.08f : 0f);
+        ConfigureOsc(p, 1, Waveform.Sine, 0.34f, -1200f, 0f, 0.003f, 0.08f, 0.70f, 0.56f, 0.22f, pan: synth ? 0.08f : 0f);
         DisableOsc(p, 2);
         DisableOsc(p, 3);
         p.FilterType = FilterType.LowPass;
@@ -172,11 +174,11 @@ internal static class GmPresetCatalog
 
     private static void ConfigureStrings(SynthParameters p, bool solo)
     {
-        ConfigureOsc(p, 0, Waveform.Saw, 0.44f, 0f, solo ? 4f : 0f, 0.04f, solo ? 0.30f : 0.05f, solo ? 0.70f : 0.00f, solo ? 0.55f : 0.00f, solo ? 0.42f : 0.22f);
-        ConfigureOsc(p, 1, solo ? Waveform.Triangle : Waveform.Saw, 0.28f, solo ? 7f : -7f, 0f, 0.03f, solo ? 0.24f : 0.08f, solo ? 0.66f : 0.00f, solo ? 0.50f : 0.00f, solo ? 0.38f : 0.18f);
+        ConfigureOsc(p, 0, Waveform.Saw, 0.44f, 0f, solo ? 4f : 0f, 0.04f, solo ? 0.30f : 0.05f, solo ? 0.70f : 0.00f, solo ? 0.55f : 0.00f, solo ? 0.42f : 0.22f, pan: solo ? -0.18f : -0.24f);
+        ConfigureOsc(p, 1, solo ? Waveform.Triangle : Waveform.Saw, 0.28f, solo ? 7f : -7f, 0f, 0.03f, solo ? 0.24f : 0.08f, solo ? 0.66f : 0.00f, solo ? 0.50f : 0.00f, solo ? 0.38f : 0.18f, pan: solo ? 0.14f : 0.24f);
         if (solo)
         {
-            ConfigureOsc(p, 2, Waveform.Sine, 0.10f, 0f, 5f, 0.05f, 0.18f, 0.60f, 0.46f, 0.34f);
+            ConfigureOsc(p, 2, Waveform.Sine, 0.10f, 0f, 5f, 0.05f, 0.18f, 0.60f, 0.46f, 0.34f, pan: 0.04f);
         }
         else
         {
@@ -198,10 +200,10 @@ internal static class GmPresetCatalog
 
     private static void ConfigureEnsemble(SynthParameters p, bool choir)
     {
-        ConfigureOsc(p, 0, choir ? Waveform.Triangle : Waveform.Saw, 0.36f, 0f, 0f, 0.12f, 0.60f, 0.82f, 0.70f, 0.90f);
-        ConfigureOsc(p, 1, Waveform.Saw, 0.24f, 8f, 0f, 0.10f, 0.55f, 0.80f, 0.68f, 0.84f);
-        ConfigureOsc(p, 2, choir ? Waveform.Sine : Waveform.Triangle, 0.18f, -8f, choir ? 8f : 0f, 0.15f, 0.48f, 0.78f, 0.66f, 0.92f);
-        ConfigureOsc(p, 3, choir ? Waveform.Noise : Waveform.Saw, choir ? 0.03f : 0.14f, 0f, 0f, 0.03f, 0.30f, 0.70f, 0.58f, 0.70f);
+        ConfigureOsc(p, 0, choir ? Waveform.Triangle : Waveform.Saw, 0.36f, 0f, 0f, 0.12f, 0.60f, 0.82f, 0.70f, 0.90f, pan: -0.34f);
+        ConfigureOsc(p, 1, Waveform.Saw, 0.24f, 8f, 0f, 0.10f, 0.55f, 0.80f, 0.68f, 0.84f, pan: -0.12f);
+        ConfigureOsc(p, 2, choir ? Waveform.Sine : Waveform.Triangle, 0.18f, -8f, choir ? 8f : 0f, 0.15f, 0.48f, 0.78f, 0.66f, 0.92f, pan: 0.12f);
+        ConfigureOsc(p, 3, choir ? Waveform.Noise : Waveform.Saw, choir ? 0.03f : 0.14f, 0f, 0f, 0.03f, 0.30f, 0.70f, 0.58f, 0.70f, pan: 0.34f);
         p.FilterType = FilterType.LowPass;
         p.FilterCutoffHz = choir ? 2400f : 3200f;
         p.FilterResonance = 0.10f;
@@ -209,6 +211,7 @@ internal static class GmPresetCatalog
         p.ChorusMix = choir ? 0.22f : 0.30f;
         p.ChorusRateHz = 0.28f;
         p.ChorusDepth = choir ? 0.26f : 0.36f;
+        p.ChorusTremoloDepth = choir ? 0.12f : 0.08f;
         p.ReverbType = choir ? ReverbType.Shimmer : ReverbType.Hall;
         p.ReverbMix = choir ? 0.34f : 0.24f;
         p.ReverbSize = 0.86f;
@@ -267,8 +270,8 @@ internal static class GmPresetCatalog
 
     private static void ConfigureLead(SynthParameters p, bool square)
     {
-        ConfigureOsc(p, 0, square ? Waveform.Square : Waveform.Saw, 0.54f, 0f, 0f, 0.01f, 0.12f, 0.82f, 0.68f, 0.20f, pulseWidth: 0.34f, pwmRate: square ? 3.2f : 0f);
-        ConfigureOsc(p, 1, Waveform.Saw, 0.22f, square ? 8f : 5f, 4f, 0.02f, 0.14f, 0.78f, 0.64f, 0.18f);
+        ConfigureOsc(p, 0, square ? Waveform.Square : Waveform.Saw, 0.54f, 0f, 0f, 0.01f, 0.12f, 0.82f, 0.68f, 0.20f, pulseWidth: 0.34f, pwmRate: square ? 3.2f : 0f, pan: -0.10f);
+        ConfigureOsc(p, 1, Waveform.Saw, 0.22f, square ? 8f : 5f, 4f, 0.02f, 0.14f, 0.78f, 0.64f, 0.18f, pan: 0.10f);
         DisableOsc(p, 2);
         DisableOsc(p, 3);
         p.FilterType = FilterType.LowPass;
@@ -285,15 +288,16 @@ internal static class GmPresetCatalog
             p.ChorusMix = 0.10f;
             p.ChorusRateHz = 0.6f;
             p.ChorusDepth = 0.18f;
+            p.ChorusTremoloDepth = 0.09f;
         }
     }
 
     private static void ConfigurePad(SynthParameters p, bool airy)
     {
-        ConfigureOsc(p, 0, airy ? Waveform.Triangle : Waveform.Saw, 0.34f, 0f, 0f, 0.18f, 0.60f, 0.84f, 0.76f, 1.10f);
-        ConfigureOsc(p, 1, Waveform.Saw, 0.26f, 7f, 0f, 0.20f, 0.56f, 0.82f, 0.74f, 1.00f);
-        ConfigureOsc(p, 2, Waveform.Square, 0.14f, -7f, airy ? 0f : 0f, 0.18f, 0.48f, 0.78f, 0.70f, 1.08f, pulseWidth: airy ? 0.42f : 0.35f, pwmRate: airy ? 0.25f : 0.55f);
-        ConfigureOsc(p, 3, airy ? Waveform.Noise : Waveform.Sine, airy ? 0.04f : 0.10f, 0f, airy ? 0f : 3f, 0.22f, 0.42f, 0.76f, 0.68f, 1.10f);
+        ConfigureOsc(p, 0, airy ? Waveform.Triangle : Waveform.Saw, 0.34f, 0f, 0f, 0.18f, 0.60f, 0.84f, 0.76f, 1.10f, pan: -0.30f);
+        ConfigureOsc(p, 1, Waveform.Saw, 0.26f, 7f, 0f, 0.20f, 0.56f, 0.82f, 0.74f, 1.00f, pan: -0.10f);
+        ConfigureOsc(p, 2, Waveform.Square, 0.14f, -7f, airy ? 0f : 0f, 0.18f, 0.48f, 0.78f, 0.70f, 1.08f, pulseWidth: airy ? 0.42f : 0.35f, pwmRate: airy ? 0.25f : 0.55f, pan: 0.10f);
+        ConfigureOsc(p, 3, airy ? Waveform.Noise : Waveform.Sine, airy ? 0.04f : 0.10f, 0f, airy ? 0f : 3f, 0.22f, 0.42f, 0.76f, 0.68f, 1.10f, pan: 0.30f);
         p.FilterType = FilterType.LowPass;
         p.FilterCutoffHz = airy ? 3000f : 2600f;
         p.FilterResonance = 0.16f;
@@ -301,6 +305,7 @@ internal static class GmPresetCatalog
         p.ChorusMix = airy ? 0.24f : 0.20f;
         p.ChorusRateHz = 0.22f;
         p.ChorusDepth = airy ? 0.34f : 0.28f;
+        p.ChorusTremoloDepth = airy ? 0.16f : 0.10f;
         p.ReverbType = airy ? ReverbType.Shimmer : ReverbType.Hall;
         p.ReverbMix = airy ? 0.30f : 0.24f;
         p.ReverbSize = 0.88f;
@@ -309,9 +314,9 @@ internal static class GmPresetCatalog
 
     private static void ConfigureSynthFx(SynthParameters p, bool beam)
     {
-        ConfigureOsc(p, 0, beam ? Waveform.Saw : Waveform.Noise, beam ? 0.38f : 0.26f, 0f, beam ? 0f : 0f, 0.08f, 0.34f, 0.72f, 0.58f, 0.80f);
-        ConfigureOsc(p, 1, beam ? Waveform.Square : Waveform.Triangle, 0.24f, beam ? 12f : -8f, beam ? 5f : 0f, 0.06f, 0.40f, 0.70f, 0.54f, 0.88f, pulseWidth: 0.30f, pwmRate: beam ? 4.0f : 1.2f);
-        ConfigureOsc(p, 2, Waveform.Sine, 0.16f, beam ? -1200f : 0f, beam ? 2f : 0f, 0.12f, 0.50f, 0.68f, 0.50f, 0.92f);
+        ConfigureOsc(p, 0, beam ? Waveform.Saw : Waveform.Noise, beam ? 0.38f : 0.26f, 0f, beam ? 0f : 0f, 0.08f, 0.34f, 0.72f, 0.58f, 0.80f, pan: -0.24f);
+        ConfigureOsc(p, 1, beam ? Waveform.Square : Waveform.Triangle, 0.24f, beam ? 12f : -8f, beam ? 5f : 0f, 0.06f, 0.40f, 0.70f, 0.54f, 0.88f, pulseWidth: 0.30f, pwmRate: beam ? 4.0f : 1.2f, pan: 0.24f);
+        ConfigureOsc(p, 2, Waveform.Sine, 0.16f, beam ? -1200f : 0f, beam ? 2f : 0f, 0.12f, 0.50f, 0.68f, 0.50f, 0.92f, pan: beam ? 0.10f : 0f);
         DisableOsc(p, 3);
         p.FilterType = FilterType.BandPass;
         p.FilterCutoffHz = beam ? 1800f : 1200f;
@@ -369,8 +374,8 @@ internal static class GmPresetCatalog
 
     private static void ConfigureSoundFx(SynthParameters p, bool burst)
     {
-        ConfigureOsc(p, 0, Waveform.Noise, burst ? 0.52f : 0.34f, 0f, 0f, 0.02f, burst ? 0.20f : 0.80f, burst ? 0.50f : 0.70f, burst ? 0.36f : 0.52f, burst ? 0.18f : 0.90f);
-        ConfigureOsc(p, 1, burst ? Waveform.Square : Waveform.Sine, burst ? 0.20f : 0.08f, 0f, burst ? 0f : 0f, 0.01f, 0.20f, burst ? 0.60f : 0.72f, burst ? 0.42f : 0.54f, burst ? 0.16f : 0.80f, pulseWidth: 0.24f, pwmRate: burst ? 6.4f : 0f);
+        ConfigureOsc(p, 0, Waveform.Noise, burst ? 0.52f : 0.34f, 0f, 0f, 0.02f, burst ? 0.20f : 0.80f, burst ? 0.50f : 0.70f, burst ? 0.36f : 0.52f, burst ? 0.18f : 0.90f, pan: burst ? -0.20f : -0.12f);
+        ConfigureOsc(p, 1, burst ? Waveform.Square : Waveform.Sine, burst ? 0.20f : 0.08f, 0f, burst ? 0f : 0f, 0.01f, 0.20f, burst ? 0.60f : 0.72f, burst ? 0.42f : 0.54f, burst ? 0.16f : 0.80f, pulseWidth: 0.24f, pwmRate: burst ? 6.4f : 0f, pan: burst ? 0.20f : 0.12f);
         DisableOsc(p, 2);
         DisableOsc(p, 3);
         p.FilterType = burst ? FilterType.BandPass : FilterType.HighPass;
@@ -404,7 +409,8 @@ internal static class GmPresetCatalog
         float releaseSeconds,
         float glideSeconds,
         float pulseWidth = 0.50f,
-        float pwmRate = 0f)
+        float pwmRate = 0f,
+        float pan = 0f)
     {
         OscillatorParameters osc = parameters.GetOscillator(index);
         osc.Enabled = true;
@@ -420,6 +426,7 @@ internal static class GmPresetCatalog
         osc.GlideSeconds = glideSeconds;
         osc.PulseWidth = pulseWidth;
         osc.PwmRateHz = pwmRate;
+        osc.Pan = pan;
     }
 
     private static void DisableOsc(SynthParameters parameters, int index)
@@ -432,5 +439,6 @@ internal static class GmPresetCatalog
         osc.VibratoRateHz = 0f;
         osc.GlideSeconds = 0f;
         osc.PwmRateHz = 0f;
+        osc.Pan = 0f;
     }
 }
