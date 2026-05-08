@@ -152,11 +152,16 @@ internal sealed class TinySynthController
 
         PianoKeyLayout[] keys = KeyboardLayoutBuilder.Build(keyboardPanel, _keyboardStartMidi, _keyboardNoteCount);
         int hoveredMidiNote = KeyboardLayoutBuilder.GetHoveredMidiNote(keys, mousePosition);
-        InputDeviceContext inputDeviceContext = new(mousePosition, mousePressed, mouseDown, mouseReleased, holdPedalBounds, keys);
+        InputDeviceContext inputDeviceContext = new(mousePosition, mousePressed, mouseDown, mouseReleased);
         _inputActions.Clear();
 
         foreach (IInputDevice inputDevice in _inputDevices)
         {
+            if (inputDevice is IOnScreenInputDevice onScreenInputDevice)
+            {
+                onScreenInputDevice.SetLayout(keys, holdPedalBounds);
+            }
+
             inputDevice.Update(inputDeviceContext, _inputActions);
         }
 

@@ -1,19 +1,28 @@
+using Raylib_CSharp.Transformations;
 using TinySynth.UI;
 
 namespace TinySynth.App.Input;
 
-internal sealed class OnScreenKeyboardInputDevice : IInputDevice
+internal sealed class OnScreenKeyboardInputDevice : IOnScreenInputDevice
 {
     private int _activePointerMidiNote = -1;
+    private PianoKeyLayout[] _keys = [];
+    private Rectangle _holdPedalBounds;
+
+    public void SetLayout(PianoKeyLayout[] keys, Rectangle holdPedalBounds)
+    {
+        _keys = keys;
+        _holdPedalBounds = holdPedalBounds;
+    }
 
     public void Update(InputDeviceContext context, ICollection<InputAction> actions)
     {
-        if (context.MousePressed && Contains(context.HoldPedalBounds, context.MousePosition))
+        if (context.MousePressed && Contains(_holdPedalBounds, context.MousePosition))
         {
             actions.Add(new InputAction(InputActionType.HoldPedalToggle));
         }
 
-        int hoveredMidiNote = KeyboardLayoutBuilder.GetHoveredMidiNote(context.Keys, context.MousePosition);
+        int hoveredMidiNote = KeyboardLayoutBuilder.GetHoveredMidiNote(_keys, context.MousePosition);
 
         if (context.MousePressed && hoveredMidiNote >= 0)
         {
