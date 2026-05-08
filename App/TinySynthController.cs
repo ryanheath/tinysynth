@@ -5,8 +5,8 @@ using Raylib_CSharp.Rendering;
 using Raylib_CSharp.Transformations;
 using Raylib_CSharp.Windowing;
 using System.Numerics;
-using System.Runtime.InteropServices;
 using TinySynth.App.Input;
+using TinySynth.App.Services;
 using TinySynth.Synth;
 using TinySynth.UI;
 using RaylibInput = Raylib_CSharp.Interact.Input;
@@ -31,10 +31,7 @@ internal sealed class TinySynthController
     private readonly float _controlPanelHeight;
     private readonly float _keyboardPanelHeight;
     private readonly int _sampleRate;
-    private readonly AudioStream _audioStream;
-    private readonly IntPtr _audioBufferPointer;
-    private readonly float[] _audioBuffer;
-    private readonly float[] _scopeBuffer;
+    private readonly AudioStreamPump _audioStreamPump;
     private readonly SynthParameters _synthParameters;
     private readonly SynthEngine _synthEngine;
     private readonly IReadOnlyList<IInputDevice> _inputDevices;
@@ -65,9 +62,7 @@ internal sealed class TinySynthController
     private float _masterVolume;
 
     public TinySynthController(
-        AudioStream audioStream,
-        IntPtr audioBufferPointer,
-        float[] audioBuffer,
+        AudioStreamPump audioStreamPump,
         int keyboardStartMidi,
         int keyboardNoteCount,
         int sampleRate,
@@ -78,10 +73,7 @@ internal sealed class TinySynthController
         float keyboardPanelHeight,
         IReadOnlyList<IInputDevice> inputDevices)
     {
-        _audioStream = audioStream;
-        _audioBufferPointer = audioBufferPointer;
-        _audioBuffer = audioBuffer;
-        _scopeBuffer = new float[2048];
+        _audioStreamPump = audioStreamPump;
         _keyboardStartMidi = keyboardStartMidi;
         _keyboardNoteCount = keyboardNoteCount;
         _panelGap = panelGap;
@@ -184,12 +176,7 @@ internal sealed class TinySynthController
 
         SyncPhysicalNotes();
 
-        while (_audioStream.IsProcessed())
-        {
-            _synthEngine.FillBuffer(_audioBuffer, _scopeBuffer, ref _scopeWriteIndex, _synthParameters);
-            Marshal.Copy(_audioBuffer, 0, _audioBufferPointer, _audioBuffer.Length);
-            _audioStream.Update(_audioBufferPointer, _audioBuffer.Length / 2);
-        }
+        _audioStreamPump.Pump(_synthEngine, _synthParameters);
 
         Graphics.BeginDrawing();
         Graphics.ClearBackground(_backgroundColor);
@@ -650,8 +637,8 @@ internal sealed class TinySynthController
 
             SynthRenderer.DrawFilterAnalysis(
                 filterAnalysisArea,
-                _scopeBuffer,
-                _scopeWriteIndex,
+                _audioStreamPump.ScopeBuffer,
+                _audioStreamPump.ScopeWriteIndex,
                 sampleRate: _sampleRate,
                 filterType: _synthParameters.FilterType,
                 cutoffHz: _synthParameters.FilterCutoffHz,
@@ -1054,7 +1041,7 @@ internal sealed class TinySynthController
             : $"Envelope: {_synthEngine.DisplayEnvelopeStage} | Chord: {possibleChord}";
         Graphics.DrawText(envelopeStatus, (int)controlPanel.X + 470, (int)controlPanel.Y + 82, 18, _mutedTextColor);
 
-        SynthRenderer.DrawWaveformScope(waveformPanel, _scopeBuffer, _scopeWriteIndex, _accentStrongColor, _borderColor, _mutedTextColor);
+        SynthRenderer.DrawWaveformScope(waveformPanel, _audioStreamPump.ScopeBuffer, _audioStreamPump.ScopeWriteIndex, _accentStrongColor, _borderColor, _mutedTextColor);
         Graphics.DrawText("Keyboard", (int)keyboardPanel.X + 18, (int)keyboardPanel.Y + 14, 22, _textColor);
         float newMasterVolume = SynthRenderer.DrawSlider(
             index: 9,
