@@ -11,6 +11,7 @@ internal readonly record struct LayoutMetrics(
     Rectangle FilterButtonsArea,
     Rectangle FxChorusButtonsArea,
     Rectangle FxReverbButtonsArea,
+    Rectangle FxDelayButtonsArea,
     Rectangle FilterAnalysisArea,
     float SliderRowOneY,
     float SliderRowTwoY,

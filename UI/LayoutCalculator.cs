@@ -34,8 +34,8 @@ internal static class LayoutCalculator
         float filterSliderRowThreeY = controlPanel.Y + 348;
         float filterSliderWidth = 190f;
         float filterFullWidth = (filterSliderWidth * 2f) + 18f;
-        float fxColumnGap = 24f;
-        float fxColumnWidth = MathF.Min(420f, (controlPanel.Width - 40f - fxColumnGap) / 2f);
+        float fxColumnGap = 18f;
+        float fxColumnWidth = MathF.Min(280f, (controlPanel.Width - 40f - (fxColumnGap * 2f)) / 3f);
         float fxSliderY = controlPanel.Y + 214;
         float fxSliderRowTwoY = controlPanel.Y + 270;
         float fxSliderWidth = fxColumnWidth;
@@ -46,8 +46,9 @@ internal static class LayoutCalculator
         Rectangle filterButtonsArea = new(controlPanel.X + 20, controlPanel.Y + 170, 420, 36);
         Rectangle fxChorusButtonsArea = new(controlPanel.X + 20, controlPanel.Y + 160, fxColumnWidth, 36);
         Rectangle fxReverbButtonsArea = new(controlPanel.X + 20 + fxColumnWidth + fxColumnGap, controlPanel.Y + 160, fxColumnWidth, 36);
+        Rectangle fxDelayButtonsArea = new(controlPanel.X + 20 + ((fxColumnWidth + fxColumnGap) * 2f), controlPanel.Y + 160, fxColumnWidth, 36);
         Rectangle filterAnalysisArea = new(controlPanel.X + 20 + filterFullWidth + 38f, controlPanel.Y + 108, controlPanel.Width - ((20 + filterFullWidth + 38f) + 20), controlPanel.Height - 128);
 
-        return new LayoutMetrics(controlPanel, waveformPanel, keyboardPanel, modeButtonsArea, oscillatorButtonsArea, filterButtonsArea, fxChorusButtonsArea, fxReverbButtonsArea, filterAnalysisArea, sliderRowOneY, sliderRowTwoY, sliderWidth, filterSliderY, filterSliderRowTwoY, filterSliderRowThreeY, filterSliderWidth, filterFullWidth, waveformButtonsArea, fxSliderY, fxSliderRowTwoY, fxSliderWidth, fxFullWidth);
+        return new LayoutMetrics(controlPanel, waveformPanel, keyboardPanel, modeButtonsArea, oscillatorButtonsArea, filterButtonsArea, fxChorusButtonsArea, fxReverbButtonsArea, fxDelayButtonsArea, filterAnalysisArea, sliderRowOneY, sliderRowTwoY, sliderWidth, filterSliderY, filterSliderRowTwoY, filterSliderRowThreeY, filterSliderWidth, filterFullWidth, waveformButtonsArea, fxSliderY, fxSliderRowTwoY, fxSliderWidth, fxFullWidth);
     }
 }

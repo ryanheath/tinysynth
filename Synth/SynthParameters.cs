@@ -42,6 +42,14 @@ internal sealed class SynthParameters
 
     public float ReverbDamping { get; set; } = 0.35f;
 
+    public DelayType DelayType { get; set; } = DelayType.Off;
+
+    public float DelayMix { get; set; } = 0f;
+
+    public float DelayTimeSeconds { get; set; } = 0.28f;
+
+    public float DelayFeedback { get; set; } = 0.30f;
+
     public OscillatorParameters GetOscillator(int index)
     {
         return _oscillators[Math.Clamp(index, 0, _oscillators.Length - 1)];

@@ -6,12 +6,15 @@ internal sealed class SynthEngine
     private readonly VoiceSlot[] _voiceSlots;
     private readonly HashSet<int> _activeNotes = [];
     private readonly float[] _chorusBuffer;
+    private readonly float[] _delayBuffer;
     private readonly ReverbDelayLine[] _reverbLines;
     private bool _holdPedalEnabled;
     private int _chorusWriteIndex;
+    private int _delayWriteIndex;
     private long _voiceStartCounter;
     private float _chorusPhaseA;
     private float _chorusPhaseB;
+    private float _delayFilterState;
 
     public SynthEngine(int sampleRate, float masterGain, int defaultMidiNote, int voiceCount)
     {
@@ -19,6 +22,7 @@ internal sealed class SynthEngine
         voiceCount = Math.Max(1, voiceCount);
         _voiceSlots = new VoiceSlot[voiceCount];
         _chorusBuffer = new float[Math.Max(2048, sampleRate / 2)];
+        _delayBuffer = new float[Math.Max(4096, sampleRate)];
         _reverbLines =
         [
             new ReverbDelayLine(sampleRate, 0.097f),
@@ -265,6 +269,7 @@ internal sealed class SynthEngine
     {
         float sample = ProcessChorus(inputSample, parameters);
         sample = ProcessReverb(sample, parameters);
+        sample = ProcessDelay(sample, parameters);
         return sample;
     }
 
@@ -343,6 +348,38 @@ internal sealed class SynthEngine
 
         float wetSample = wetSum * 0.35f;
         return (inputSample * (1f - (mix * 0.55f))) + (wetSample * mix);
+    }
+
+    private float ProcessDelay(float inputSample, SynthParameters parameters)
+    {
+        if (parameters.DelayType == DelayType.Off || parameters.DelayMix <= 0.0001f)
+        {
+            return inputSample;
+        }
+
+        (float timeScale, float feedbackScale, float toneResponse, float modulationDepth) = parameters.DelayType switch
+        {
+            DelayType.Slap => (0.45f, 0.55f, 0.72f, 0f),
+            DelayType.PingPong => (0.85f, 0.70f, 0.58f, 0.0015f),
+            DelayType.Tape => (1.00f, 0.78f, 0.42f, 0.0035f),
+            _ => (0f, 0f, 1f, 0f)
+        };
+
+        float mix = Math.Clamp(parameters.DelayMix, 0f, 1f);
+        float delaySeconds = Math.Clamp(parameters.DelayTimeSeconds * timeScale, 0.04f, 0.95f);
+        float feedback = Math.Clamp(parameters.DelayFeedback * feedbackScale, 0f, 0.88f);
+        float modulation = modulationDepth <= 0f
+            ? 0f
+            : MathF.Sin(_chorusPhaseA * MathF.Tau) * (_sampleRate * modulationDepth);
+        float delaySamples = Math.Clamp((delaySeconds * _sampleRate) + modulation, 1f, _delayBuffer.Length - 2f);
+        float delayed = ReadDelay(_delayBuffer, _delayWriteIndex, delaySamples);
+
+        _delayFilterState += (delayed - _delayFilterState) * toneResponse;
+        float filteredDelay = _delayFilterState;
+        _delayBuffer[_delayWriteIndex] = inputSample + (filteredDelay * feedback);
+        _delayWriteIndex = (_delayWriteIndex + 1) % _delayBuffer.Length;
+
+        return (inputSample * (1f - (mix * 0.45f))) + (filteredDelay * mix);
     }
 
     private static float AdvancePhase(float phase, float increment)

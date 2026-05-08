@@ -217,6 +217,25 @@ internal static class SynthRenderer
         return DrawEnumButtons(area, reverbTypes, currentValue, mousePosition, mousePressed, panelColor, borderColor, selectedColor, selectedBorderColor, textColor, static value => value.ToString());
     }
 
+    public static DelayType DrawDelayButtons(
+        Rectangle area,
+        DelayType currentValue,
+        Vector2 mousePosition,
+        bool mousePressed,
+        Color panelColor,
+        Color borderColor,
+        Color selectedColor,
+        Color selectedBorderColor,
+        Color textColor)
+    {
+        DelayType[] delayTypes = [DelayType.Off, DelayType.Slap, DelayType.PingPong, DelayType.Tape];
+        return DrawEnumButtons(area, delayTypes, currentValue, mousePosition, mousePressed, panelColor, borderColor, selectedColor, selectedBorderColor, textColor, static value => value switch
+        {
+            DelayType.PingPong => "Ping-pong",
+            _ => value.ToString()
+        });
+    }
+
     public static float DrawSlider(
         int index,
         ref int activeSlider,

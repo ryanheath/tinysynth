@@ -531,16 +531,21 @@ internal sealed class TinySynthController
         }
         else
         {
-            float fxRightColumnX = controlPanel.X + 20 + fxSliderWidth + 24f;
+            float fxMiddleColumnX = layout.FxReverbButtonsArea.X;
+            float fxRightColumnX = layout.FxDelayButtonsArea.X;
 
             Graphics.DrawText("Chorus type", (int)controlPanel.X + 20, (int)controlPanel.Y + 138, 18, _mutedTextColor);
             _synthParameters.ChorusType = SynthRenderer.DrawChorusButtons(layout.FxChorusButtonsArea, _synthParameters.ChorusType, mousePosition, mousePressed, _panelColor, _borderColor, _accentSoftColor, _accentStrongColor, _textColor);
 
-            Graphics.DrawText("Reverb type", (int)fxRightColumnX, (int)controlPanel.Y + 138, 18, _mutedTextColor);
+            Graphics.DrawText("Reverb type", (int)fxMiddleColumnX, (int)controlPanel.Y + 138, 18, _mutedTextColor);
             _synthParameters.ReverbType = SynthRenderer.DrawReverbButtons(layout.FxReverbButtonsArea, _synthParameters.ReverbType, mousePosition, mousePressed, _panelColor, _borderColor, _accentSoftColor, _accentStrongColor, _textColor);
+
+            Graphics.DrawText("Delay type", (int)fxRightColumnX, (int)controlPanel.Y + 138, 18, _mutedTextColor);
+            _synthParameters.DelayType = SynthRenderer.DrawDelayButtons(layout.FxDelayButtonsArea, _synthParameters.DelayType, mousePosition, mousePressed, _panelColor, _borderColor, _accentSoftColor, _accentStrongColor, _textColor);
 
             bool chorusEnabled = _synthParameters.ChorusType != ChorusType.Off;
             bool reverbEnabled = _synthParameters.ReverbType != ReverbType.Off;
+            bool delayEnabled = _synthParameters.DelayType != DelayType.Off;
 
             _synthParameters.ChorusMix = SynthRenderer.DrawSlider(
                 index: 15,
@@ -608,7 +613,7 @@ internal sealed class TinySynthController
                 enabled: reverbEnabled,
                 label: "Reverb mix",
                 valueLabel: $"{(_synthParameters.ReverbMix * 100f):0}%",
-                bounds: new Rectangle(fxRightColumnX, fxSliderY, fxSliderWidth, 20),
+                bounds: new Rectangle(fxMiddleColumnX, fxSliderY, fxSliderWidth, 20),
                 value: _synthParameters.ReverbMix,
                 minValue: 0.00f,
                 maxValue: 1.00f,
@@ -628,7 +633,7 @@ internal sealed class TinySynthController
                 enabled: reverbEnabled,
                 label: "Reverb size",
                 valueLabel: $"{_synthParameters.ReverbSize:0.00}",
-                bounds: new Rectangle(fxRightColumnX, fxSliderRowTwoY, fxSliderWidth, 20),
+                bounds: new Rectangle(fxMiddleColumnX, fxSliderRowTwoY, fxSliderWidth, 20),
                 value: _synthParameters.ReverbSize,
                 minValue: 0.10f,
                 maxValue: 1.00f,
@@ -648,10 +653,70 @@ internal sealed class TinySynthController
                 enabled: reverbEnabled,
                 label: "Reverb damp",
                 valueLabel: $"{_synthParameters.ReverbDamping:0.00}",
-                bounds: new Rectangle(fxRightColumnX, fxSliderRowTwoY + 56, fxSliderWidth, 20),
+                bounds: new Rectangle(fxMiddleColumnX, fxSliderRowTwoY + 56, fxSliderWidth, 20),
                 value: _synthParameters.ReverbDamping,
                 minValue: 0.00f,
                 maxValue: 1.00f,
+                mousePosition: mousePosition,
+                mousePressed: mousePressed,
+                mouseDown: mouseDown,
+                accentColor: _accentColor,
+                accentSoftColor: _accentSoftColor,
+                borderColor: _borderColor,
+                panelColor: _panelColor,
+                textColor: _textColor,
+                mutedTextColor: _mutedTextColor);
+
+            _synthParameters.DelayMix = SynthRenderer.DrawSlider(
+                index: 21,
+                activeSlider: ref _activeSlider,
+                enabled: delayEnabled,
+                label: "Delay mix",
+                valueLabel: $"{(_synthParameters.DelayMix * 100f):0}%",
+                bounds: new Rectangle(fxRightColumnX, fxSliderY, fxSliderWidth, 20),
+                value: _synthParameters.DelayMix,
+                minValue: 0.00f,
+                maxValue: 1.00f,
+                mousePosition: mousePosition,
+                mousePressed: mousePressed,
+                mouseDown: mouseDown,
+                accentColor: _accentColor,
+                accentSoftColor: _accentSoftColor,
+                borderColor: _borderColor,
+                panelColor: _panelColor,
+                textColor: _textColor,
+                mutedTextColor: _mutedTextColor);
+
+            _synthParameters.DelayTimeSeconds = SynthRenderer.DrawSlider(
+                index: 22,
+                activeSlider: ref _activeSlider,
+                enabled: delayEnabled,
+                label: "Delay time",
+                valueLabel: $"{_synthParameters.DelayTimeSeconds:0.00}s",
+                bounds: new Rectangle(fxRightColumnX, fxSliderRowTwoY, fxSliderWidth, 20),
+                value: _synthParameters.DelayTimeSeconds,
+                minValue: 0.05f,
+                maxValue: 0.90f,
+                mousePosition: mousePosition,
+                mousePressed: mousePressed,
+                mouseDown: mouseDown,
+                accentColor: _accentColor,
+                accentSoftColor: _accentSoftColor,
+                borderColor: _borderColor,
+                panelColor: _panelColor,
+                textColor: _textColor,
+                mutedTextColor: _mutedTextColor);
+
+            _synthParameters.DelayFeedback = SynthRenderer.DrawSlider(
+                index: 23,
+                activeSlider: ref _activeSlider,
+                enabled: delayEnabled,
+                label: "Delay fb",
+                valueLabel: $"{_synthParameters.DelayFeedback:0.00}",
+                bounds: new Rectangle(fxRightColumnX, fxSliderRowTwoY + 56, fxSliderWidth, 20),
+                value: _synthParameters.DelayFeedback,
+                minValue: 0.00f,
+                maxValue: 0.85f,
                 mousePosition: mousePosition,
                 mousePressed: mousePressed,
                 mouseDown: mouseDown,
