@@ -15,6 +15,7 @@ internal readonly record struct LayoutMetrics(
     Rectangle FilterAnalysisArea,
     float SliderRowOneY,
     float SliderRowTwoY,
+    float SliderRowThreeY,
     float SliderWidth,
     float FilterSliderY,
     float FilterSliderRowTwoY,

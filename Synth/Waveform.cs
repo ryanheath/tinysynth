@@ -5,5 +5,6 @@ internal enum Waveform
     Sine,
     Square,
     Saw,
-    Triangle
+    Triangle,
+    Noise
 }

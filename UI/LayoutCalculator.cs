@@ -28,6 +28,7 @@ internal static class LayoutCalculator
 
         float sliderRowOneY = controlPanel.Y + 236;
         float sliderRowTwoY = controlPanel.Y + 292;
+        float sliderRowThreeY = controlPanel.Y + 348;
         float sliderWidth = (controlPanel.Width - 40 - (18 * 4)) / 5f;
         float filterSliderY = controlPanel.Y + 236;
         float filterSliderRowTwoY = controlPanel.Y + 292;
@@ -49,6 +50,6 @@ internal static class LayoutCalculator
         Rectangle fxDelayButtonsArea = new(controlPanel.X + 20 + ((fxColumnWidth + fxColumnGap) * 2f), controlPanel.Y + 160, fxColumnWidth, 36);
         Rectangle filterAnalysisArea = new(controlPanel.X + 20 + filterFullWidth + 38f, controlPanel.Y + 108, controlPanel.Width - ((20 + filterFullWidth + 38f) + 20), controlPanel.Height - 128);
 
-        return new LayoutMetrics(controlPanel, waveformPanel, keyboardPanel, modeButtonsArea, oscillatorButtonsArea, filterButtonsArea, fxChorusButtonsArea, fxReverbButtonsArea, fxDelayButtonsArea, filterAnalysisArea, sliderRowOneY, sliderRowTwoY, sliderWidth, filterSliderY, filterSliderRowTwoY, filterSliderRowThreeY, filterSliderWidth, filterFullWidth, waveformButtonsArea, fxSliderY, fxSliderRowTwoY, fxSliderWidth, fxFullWidth);
+        return new LayoutMetrics(controlPanel, waveformPanel, keyboardPanel, modeButtonsArea, oscillatorButtonsArea, filterButtonsArea, fxChorusButtonsArea, fxReverbButtonsArea, fxDelayButtonsArea, filterAnalysisArea, sliderRowOneY, sliderRowTwoY, sliderRowThreeY, sliderWidth, filterSliderY, filterSliderRowTwoY, filterSliderRowThreeY, filterSliderWidth, filterFullWidth, waveformButtonsArea, fxSliderY, fxSliderRowTwoY, fxSliderWidth, fxFullWidth);
     }
 }

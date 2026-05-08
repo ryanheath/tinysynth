@@ -72,6 +72,10 @@ internal sealed class OscillatorParameters
 
     public float VibratoRateHz { get; set; } = 5f;
 
+    public float PulseWidth { get; set; } = 0.50f;
+
+    public float PwmRateHz { get; set; } = 0f;
+
     public float AttackSeconds { get; set; } = 0.05f;
 
     public float DecaySeconds { get; set; } = 0.18f;

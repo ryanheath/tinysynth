@@ -67,6 +67,7 @@ internal sealed class SynthVoice
             {
                 oscillator.Phase = 0f;
                 oscillator.VibratoPhase = 0f;
+                oscillator.PwmPhase = 0f;
                 oscillator.EnvelopeLevel = 0f;
                 oscillator.CurrentFrequency = oscillator.TargetFrequency;
             }
@@ -146,7 +147,7 @@ internal sealed class SynthVoice
             }
 
             float effectiveFrequency = ApplyVibrato(oscillator.CurrentFrequency, deltaTime, oscillator, oscillatorParameters);
-            float oscillatorSample = GetWaveSample(oscillator.Phase, oscillatorParameters.Waveform);
+            float oscillatorSample = GetWaveSample(oscillator, oscillatorParameters, deltaTime);
 
             sample += oscillatorSample * oscillatorParameters.Gain * oscillator.EnvelopeLevel;
             AdvancePhase(oscillator, effectiveFrequency);
@@ -449,16 +450,33 @@ internal sealed class SynthVoice
         return ApplyDetune(baseFrequency, vibratoCents);
     }
 
-    private static float GetWaveSample(float phase, Waveform waveform)
+    private static float GetWaveSample(OscillatorState oscillator, OscillatorParameters parameters, float deltaTime)
     {
-        return waveform switch
+        float phase = oscillator.Phase;
+        return parameters.Waveform switch
         {
             Waveform.Sine => MathF.Sin(phase * MathF.Tau),
-            Waveform.Square => phase < 0.5f ? 1f : -1f,
+            Waveform.Square => GetPulseSample(oscillator, parameters, deltaTime),
             Waveform.Saw => (2f * phase) - 1f,
             Waveform.Triangle => 1f - (4f * MathF.Abs(phase - 0.5f)),
+            Waveform.Noise => Random.Shared.NextSingle() * 2f - 1f,
             _ => 0f
         };
+    }
+
+    private static float GetPulseSample(OscillatorState oscillator, OscillatorParameters parameters, float deltaTime)
+    {
+        float pulseWidth = Math.Clamp(parameters.PulseWidth, 0.10f, 0.90f);
+
+        if (parameters.PwmRateHz > 0.01f)
+        {
+            oscillator.PwmPhase += parameters.PwmRateHz * deltaTime;
+            oscillator.PwmPhase -= MathF.Floor(oscillator.PwmPhase);
+            float pwmDepth = MathF.Min(MathF.Abs(pulseWidth - 0.5f) + 0.15f, 0.40f);
+            pulseWidth = Math.Clamp(pulseWidth + (MathF.Sin(oscillator.PwmPhase * MathF.Tau) * pwmDepth), 0.10f, 0.90f);
+        }
+
+        return oscillator.Phase < pulseWidth ? 1f : -1f;
     }
 
     private void AdvancePhase(OscillatorState oscillator, float frequency)
@@ -487,6 +505,8 @@ internal sealed class SynthVoice
         public float Phase { get; set; }
 
         public float VibratoPhase { get; set; }
+
+        public float PwmPhase { get; set; }
 
         public float EnvelopeLevel { get; set; }
 

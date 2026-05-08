@@ -141,6 +141,7 @@ internal sealed class TinySynthController
 
         float sliderRowOneY = layout.SliderRowOneY;
         float sliderRowTwoY = layout.SliderRowTwoY;
+        float sliderRowThreeY = layout.SliderRowThreeY;
         float sliderWidth = layout.SliderWidth;
         float filterSliderY = layout.FilterSliderY;
         float filterSliderRowTwoY = layout.FilterSliderRowTwoY;
@@ -396,6 +397,46 @@ internal sealed class TinySynthController
             value: activeOscillator.ReleaseSeconds,
             minValue: 0.01f,
             maxValue: 2.50f,
+            mousePosition: mousePosition,
+            mousePressed: mousePressed,
+            mouseDown: mouseDown,
+            accentColor: _accentColor,
+            accentSoftColor: _accentSoftColor,
+            borderColor: _borderColor,
+            panelColor: _panelColor,
+            textColor: _textColor,
+            mutedTextColor: _mutedTextColor);
+
+            activeOscillator.PulseWidth = SynthRenderer.DrawSlider(
+            index: 24,
+            activeSlider: ref _activeSlider,
+            enabled: activeOscillator.Enabled && activeOscillator.Waveform == Waveform.Square,
+            label: "Pulse width",
+            valueLabel: $"{(activeOscillator.PulseWidth * 100f):0}%",
+            bounds: new Rectangle(controlPanel.X + 20 + ((sliderWidth + 18) * 0), sliderRowThreeY, sliderWidth, 20),
+            value: activeOscillator.PulseWidth,
+            minValue: 0.10f,
+            maxValue: 0.90f,
+            mousePosition: mousePosition,
+            mousePressed: mousePressed,
+            mouseDown: mouseDown,
+            accentColor: _accentColor,
+            accentSoftColor: _accentSoftColor,
+            borderColor: _borderColor,
+            panelColor: _panelColor,
+            textColor: _textColor,
+            mutedTextColor: _mutedTextColor);
+
+            activeOscillator.PwmRateHz = SynthRenderer.DrawSlider(
+            index: 25,
+            activeSlider: ref _activeSlider,
+            enabled: activeOscillator.Enabled && activeOscillator.Waveform == Waveform.Square,
+            label: "PWM rate",
+            valueLabel: $"{activeOscillator.PwmRateHz:0.0}Hz",
+            bounds: new Rectangle(controlPanel.X + 20 + ((sliderWidth + 18) * 1), sliderRowThreeY, sliderWidth, 20),
+            value: activeOscillator.PwmRateHz,
+            minValue: 0.00f,
+            maxValue: 12.00f,
             mousePosition: mousePosition,
             mousePressed: mousePressed,
             mouseDown: mouseDown,

@@ -64,7 +64,7 @@ internal static class SynthRenderer
         Color selectedBorderColor,
         Color textColor)
     {
-        Waveform[] waveforms = [Waveform.Sine, Waveform.Square, Waveform.Saw, Waveform.Triangle];
+        Waveform[] waveforms = [Waveform.Sine, Waveform.Square, Waveform.Saw, Waveform.Triangle, Waveform.Noise];
         float buttonGap = 10f;
         float buttonWidth = (area.Width - (buttonGap * (waveforms.Length - 1))) / waveforms.Length;
 
