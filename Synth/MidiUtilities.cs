@@ -19,4 +19,10 @@ internal static class MidiUtilities
         int octave = (midiNote / 12) - 1;
         return $"{NoteNames[midiNote % 12]}{octave}";
     }
+
+    public static string PitchClassToNoteName(int pitchClass)
+    {
+        pitchClass = ((pitchClass % 12) + 12) % 12;
+        return NoteNames[pitchClass];
+    }
 }

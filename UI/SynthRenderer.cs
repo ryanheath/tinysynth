@@ -661,9 +661,13 @@ internal static class SynthRenderer
             Graphics.DrawRectangleRec(key.Bounds, fill);
             Graphics.DrawRectangleLinesEx(key.Bounds, 1f, borderColor);
 
-            if (key.MidiNote % 12 == 0)
+            if (key.MidiNote % 12 == 0 || key.MidiNote == 21)
             {
-                Graphics.DrawText(key.Label, (int)key.Bounds.X + 10, (int)(key.Bounds.Y + key.Bounds.Height - 28), 18, textColor);
+                const int labelFontSize = 14;
+                int labelWidth = TextManager.MeasureText(key.Label, labelFontSize);
+                int labelX = (int)(key.Bounds.X + ((key.Bounds.Width - labelWidth) / 2f));
+                int labelY = (int)(key.Bounds.Y + key.Bounds.Height - 22);
+                Graphics.DrawText(key.Label, labelX, labelY, labelFontSize, textColor);
             }
         }
 

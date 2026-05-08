@@ -821,11 +821,15 @@ internal sealed class TinySynthController
         }
 
         int displayMidiNote = _synthEngine.DisplayMidiNote;
+        string? possibleChord = ChordUtilities.GetChordName(_synthEngine.ActiveNotes);
         string noteStatus = displayMidiNote >= 0
-            ? $"Playing {MidiUtilities.MidiToNoteName(displayMidiNote)}  •  {_synthEngine.DisplayFrequency:0.0} Hz  •  {_synthEngine.ActiveVoiceCount} voices"
+            ? $"Playing {MidiUtilities.MidiToNoteName(displayMidiNote)} | {_synthEngine.DisplayFrequency:0.0} Hz | {_synthEngine.ActiveVoiceCount} voices"
             : "Click the piano keys or use ZSXDCVGBHNJM, from C4 to C5.";
         Graphics.DrawText(noteStatus, (int)controlPanel.X + 470, (int)controlPanel.Y + 52, 20, _textColor);
-        Graphics.DrawText($"Envelope: {_synthEngine.DisplayEnvelopeStage}", (int)controlPanel.X + 470, (int)controlPanel.Y + 82, 18, _mutedTextColor);
+        string envelopeStatus = possibleChord is null
+            ? $"Envelope: {_synthEngine.DisplayEnvelopeStage}"
+            : $"Envelope: {_synthEngine.DisplayEnvelopeStage} | Chord: {possibleChord}";
+        Graphics.DrawText(envelopeStatus, (int)controlPanel.X + 470, (int)controlPanel.Y + 82, 18, _mutedTextColor);
 
         SynthRenderer.DrawWaveformScope(waveformPanel, _scopeBuffer, _scopeWriteIndex, _accentStrongColor, _borderColor, _mutedTextColor);
         Graphics.DrawText("Keyboard", (int)keyboardPanel.X + 18, (int)keyboardPanel.Y + 14, 22, _textColor);
