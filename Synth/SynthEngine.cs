@@ -391,16 +391,23 @@ internal sealed class SynthEngine
 
     private static float ReadDelay(float[] buffer, int writeIndex, float delaySamples)
     {
-        float readPosition = writeIndex - delaySamples;
+        double readPosition = writeIndex - delaySamples;
+        readPosition %= buffer.Length;
 
-        while (readPosition < 0f)
+        if (readPosition < 0d)
         {
             readPosition += buffer.Length;
         }
 
         int sampleIndexA = (int)readPosition;
+
+        if (sampleIndexA >= buffer.Length)
+        {
+            sampleIndexA = 0;
+        }
+
         int sampleIndexB = (sampleIndexA + 1) % buffer.Length;
-        float fraction = readPosition - sampleIndexA;
+        float fraction = (float)(readPosition - sampleIndexA);
         return buffer[sampleIndexA] + ((buffer[sampleIndexB] - buffer[sampleIndexA]) * fraction);
     }
 
