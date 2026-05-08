@@ -236,6 +236,37 @@ internal static class SynthRenderer
         });
     }
 
+    public static EnvelopeMode DrawEnvelopeModeButtons(
+        Rectangle area,
+        EnvelopeMode currentValue,
+        bool enabled,
+        Vector2 mousePosition,
+        bool mousePressed,
+        Color panelColor,
+        Color borderColor,
+        Color selectedColor,
+        Color selectedBorderColor,
+        Color textColor)
+    {
+        EnvelopeMode[] envelopeModes = [EnvelopeMode.Sustain, EnvelopeMode.OneShot];
+        return DrawEnumButtons(
+            area,
+            envelopeModes,
+            currentValue,
+            mousePosition,
+            enabled && mousePressed,
+            enabled ? panelColor : new Color(236, 239, 245, 255),
+            enabled ? borderColor : new Color(194, 201, 214, 255),
+            enabled ? selectedColor : new Color(224, 228, 236, 255),
+            enabled ? selectedBorderColor : new Color(194, 201, 214, 255),
+            enabled ? textColor : new Color(134, 143, 160, 255),
+            static value => value switch
+            {
+                EnvelopeMode.OneShot => "One-shot",
+                _ => "Sustain"
+            });
+    }
+
     public static int DrawPresetFamilyButtons(
         Rectangle area,
         IReadOnlyList<GmInstrumentFamily> families,

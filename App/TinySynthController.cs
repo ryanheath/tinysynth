@@ -257,7 +257,7 @@ internal sealed class TinySynthController
             }
 
             Graphics.DrawText($"Waveform · Oscillator {_activeOscillatorIndex + 1}", (int)controlPanel.X + 20, (int)controlPanel.Y + 162, 18, _mutedTextColor);
-            Rectangle oscillatorEnabledBounds = new(controlPanel.X + 410, controlPanel.Y + 158, 192, 24);
+            Rectangle oscillatorEnabledBounds = new(layout.OscillatorButtonsArea.X + layout.OscillatorButtonsArea.Width + 20, layout.OscillatorButtonsArea.Y + 6, 192, 24);
 
             if (mousePressed && SynthRenderer.Contains(oscillatorEnabledBounds, mousePosition))
             {
@@ -277,6 +277,17 @@ internal sealed class TinySynthController
                 _mutedTextColor);
 
             activeOscillator.Waveform = SynthRenderer.DrawWaveformButtons(layout.WaveformButtonsArea, activeOscillator.Waveform, activeOscillator.Enabled, mousePosition, mousePressed, _panelColor, _borderColor, _accentSoftColor, _accentStrongColor, _textColor);
+            activeOscillator.EnvelopeMode = SynthRenderer.DrawEnvelopeModeButtons(
+                new Rectangle(layout.WaveformButtonsArea.X + layout.WaveformButtonsArea.Width + 18, layout.WaveformButtonsArea.Y, 250, layout.WaveformButtonsArea.Height),
+                activeOscillator.EnvelopeMode,
+                activeOscillator.Enabled,
+                mousePosition,
+                mousePressed,
+                _panelColor,
+                _borderColor,
+                _accentSoftColor,
+                _accentStrongColor,
+                _textColor);
 
             activeOscillator.Gain = SynthRenderer.DrawSlider(
             index: 0,

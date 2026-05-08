@@ -37,8 +37,8 @@ internal static class LayoutCalculator
         float filterFullWidth = (filterSliderWidth * 2f) + 18f;
         float fxColumnGap = 18f;
         float fxColumnWidth = MathF.Min(380f, (controlPanel.Width - 40f - (fxColumnGap * 2f)) / 3f);
-        float fxSliderY = controlPanel.Y + 214;
-        float fxSliderRowTwoY = controlPanel.Y + 270;
+        float fxSliderY = controlPanel.Y + 202;
+        float fxSliderRowTwoY = controlPanel.Y + 252;
         float fxSliderWidth = fxColumnWidth;
         float fxFullWidth = fxColumnWidth;
         Rectangle modeButtonsArea = new(controlPanel.X + 20, controlPanel.Y + 66, 420, 36);

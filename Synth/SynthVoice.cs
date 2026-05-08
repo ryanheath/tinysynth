@@ -9,6 +9,7 @@ internal sealed class SynthVoice
     private readonly OscillatorState[] _oscillators;
 
     private int _activeOscillatorCount;
+    private bool _isOneShotVoice;
     private float _filterLfoPhase;
     private readonly float[] _filterInput1 = new float[StereoChannelCount];
     private readonly float[] _filterInput2 = new float[StereoChannelCount];
@@ -49,6 +50,7 @@ internal sealed class SynthVoice
 
         ActiveMidiNote = midiNote;
         _activeOscillatorCount = parameters.Oscillators.Count;
+        _isOneShotVoice = HasOnlyOneShotOscillators(parameters);
 
         for (int i = 0; i < _activeOscillatorCount; i++)
         {
@@ -95,6 +97,11 @@ internal sealed class SynthVoice
     public void ReleaseNote()
     {
         if (ActiveMidiNote < 0 || EnvelopeStage == EnvelopeStage.Idle)
+        {
+            return;
+        }
+
+        if (_isOneShotVoice)
         {
             return;
         }
@@ -322,19 +329,25 @@ internal sealed class SynthVoice
                 break;
 
             case EnvelopeStage.Decay:
+                float decayTarget = parameters.EnvelopeMode == EnvelopeMode.OneShot
+                    ? 0f
+                    : parameters.SustainLevel;
+
                 if (parameters.DecaySeconds <= 0.01f)
                 {
-                    oscillator.EnvelopeLevel = parameters.SustainLevel;
+                    oscillator.EnvelopeLevel = decayTarget;
                 }
                 else
                 {
-                    oscillator.EnvelopeLevel -= ((1f - parameters.SustainLevel) / parameters.DecaySeconds) * deltaTime;
-                    oscillator.EnvelopeLevel = MathF.Max(oscillator.EnvelopeLevel, parameters.SustainLevel);
+                    oscillator.EnvelopeLevel -= ((1f - decayTarget) / parameters.DecaySeconds) * deltaTime;
+                    oscillator.EnvelopeLevel = MathF.Max(oscillator.EnvelopeLevel, decayTarget);
                 }
                 break;
 
             case EnvelopeStage.Sustain:
-                oscillator.EnvelopeLevel = parameters.SustainLevel;
+                oscillator.EnvelopeLevel = parameters.EnvelopeMode == EnvelopeMode.OneShot
+                    ? 0f
+                    : parameters.SustainLevel;
                 break;
 
             case EnvelopeStage.Release:
@@ -376,7 +389,7 @@ internal sealed class SynthVoice
 
         if (EnvelopeStage == EnvelopeStage.Attack)
         {
-            if (AreAllOscillatorsAtOrAbove(1f))
+            if (AreAllEnabledOscillatorsAtOrAbove(parameters, 1f))
             {
                 EnvelopeStage = EnvelopeStage.Decay;
             }
@@ -389,12 +402,40 @@ internal sealed class SynthVoice
             return;
         }
 
+        bool hasSustainOscillator = false;
+
         for (int i = 0; i < _activeOscillatorCount; i++)
         {
-            if (_oscillators[i].EnvelopeLevel > parameters.GetOscillator(i).SustainLevel)
+            OscillatorParameters oscillatorParameters = parameters.GetOscillator(i);
+
+            if (!oscillatorParameters.Enabled)
+            {
+                continue;
+            }
+
+            if (oscillatorParameters.EnvelopeMode == EnvelopeMode.OneShot)
+            {
+                if (_oscillators[i].EnvelopeLevel > 0f)
+                {
+                    return;
+                }
+
+                continue;
+            }
+
+            hasSustainOscillator = true;
+
+            if (_oscillators[i].EnvelopeLevel > oscillatorParameters.SustainLevel)
             {
                 return;
             }
+        }
+
+        if (!hasSustainOscillator)
+        {
+            ActiveMidiNote = -1;
+            EnvelopeStage = EnvelopeStage.Idle;
+            return;
         }
 
         EnvelopeStage = EnvelopeStage.Sustain;
@@ -411,6 +452,29 @@ internal sealed class SynthVoice
         }
 
         return false;
+    }
+
+    private bool HasOnlyOneShotOscillators(SynthParameters parameters)
+    {
+        bool hasEnabledOscillator = false;
+
+        for (int i = 0; i < _activeOscillatorCount; i++)
+        {
+            OscillatorParameters oscillatorParameters = parameters.GetOscillator(i);
+            if (!oscillatorParameters.Enabled)
+            {
+                continue;
+            }
+
+            hasEnabledOscillator = true;
+
+            if (oscillatorParameters.EnvelopeMode != EnvelopeMode.OneShot)
+            {
+                return false;
+            }
+        }
+
+        return hasEnabledOscillator;
     }
 
     private bool HasEnabledOscillator(SynthParameters parameters)
@@ -439,17 +503,26 @@ internal sealed class SynthVoice
         return true;
     }
 
-    private bool AreAllOscillatorsAtOrAbove(float value)
+    private bool AreAllEnabledOscillatorsAtOrAbove(SynthParameters parameters, float value)
     {
+        bool hasEnabledOscillator = false;
+
         for (int i = 0; i < _activeOscillatorCount; i++)
         {
+            if (!parameters.GetOscillator(i).Enabled)
+            {
+                continue;
+            }
+
+            hasEnabledOscillator = true;
+
             if (_oscillators[i].EnvelopeLevel < value)
             {
                 return false;
             }
         }
 
-        return true;
+        return hasEnabledOscillator;
     }
 
     private float ApplyVibrato(float baseFrequency, float deltaTime, OscillatorState oscillator, OscillatorParameters parameters)

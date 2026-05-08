@@ -66,9 +66,9 @@ internal static class GmPresetCatalog
 
     private static void ConfigurePiano(SynthParameters p, bool bright, bool electric)
     {
-        ConfigureOsc(p, 0, Waveform.Sine, bright ? 0.65f : 0.55f, 0f, 0.002f, 0.08f, 0.22f, 0.10f, 0.90f, 0.20f, pan: -0.10f);
-        ConfigureOsc(p, 1, electric ? Waveform.Triangle : Waveform.Saw, 0.32f, electric ? 7f : 2f, 0f, 0.01f, 0.35f, 0.00f, 0.75f, 0.22f, pan: 0.12f);
-        ConfigureOsc(p, 2, Waveform.Noise, bright ? 0.06f : 0.03f, 0f, 0f, 0.001f, 0.05f, 0.00f, 0.00f, 0.05f);
+        ConfigureOsc(p, 0, Waveform.Sine, bright ? 0.65f : 0.55f, 0f, 0.002f, 0.08f, 0.22f, 0.10f, 0.90f, 0.20f, pan: -0.10f, envelopeMode: EnvelopeMode.OneShot);
+        ConfigureOsc(p, 1, electric ? Waveform.Triangle : Waveform.Saw, 0.32f, electric ? 7f : 2f, 0f, 0.01f, 0.35f, 0.00f, 0.75f, 0.22f, pan: 0.12f, envelopeMode: EnvelopeMode.OneShot);
+        ConfigureOsc(p, 2, Waveform.Noise, bright ? 0.06f : 0.03f, 0f, 0f, 0.001f, 0.05f, 0.00f, 0.00f, 0.05f, envelopeMode: EnvelopeMode.OneShot);
         DisableOsc(p, 3);
         p.FilterType = FilterType.LowPass;
         p.FilterCutoffHz = bright ? 7600f : 4600f;
@@ -89,8 +89,8 @@ internal static class GmPresetCatalog
 
     private static void ConfigureChromatic(SynthParameters p, bool metallic, bool vibraphone)
     {
-        ConfigureOsc(p, 0, Waveform.Sine, 0.68f, 0f, vibraphone ? 15f : 0f, 0.004f, 0.80f, 0.00f, 0.00f, 1.40f, pan: vibraphone ? -0.18f : -0.08f);
-        ConfigureOsc(p, 1, metallic ? Waveform.Triangle : Waveform.Sine, 0.28f, 12f, vibraphone ? 0f : 0f, 0.002f, 0.65f, 0.00f, 0.00f, 1.10f, pan: vibraphone ? 0.18f : 0.08f);
+        ConfigureOsc(p, 0, Waveform.Sine, 0.68f, 0f, vibraphone ? 15f : 0f, 0.004f, 0.80f, 0.00f, 0.00f, 1.40f, pan: vibraphone ? -0.18f : -0.08f, envelopeMode: EnvelopeMode.OneShot);
+        ConfigureOsc(p, 1, metallic ? Waveform.Triangle : Waveform.Sine, 0.28f, 12f, vibraphone ? 0f : 0f, 0.002f, 0.65f, 0.00f, 0.00f, 1.10f, pan: vibraphone ? 0.18f : 0.08f, envelopeMode: EnvelopeMode.OneShot);
         DisableOsc(p, 2);
         DisableOsc(p, 3);
         p.FilterType = FilterType.LowPass;
@@ -132,9 +132,9 @@ internal static class GmPresetCatalog
 
     private static void ConfigureGuitar(SynthParameters p, bool electric, bool muted)
     {
-        ConfigureOsc(p, 0, electric ? Waveform.Saw : Waveform.Triangle, 0.48f, 0f, 0f, 0.002f, muted ? 0.10f : 0.18f, 0.00f, muted ? 0.12f : 0.22f, muted ? 0.08f : 0.25f);
-        ConfigureOsc(p, 1, Waveform.Sine, 0.26f, 7f, 0f, 0.001f, 0.10f, 0.00f, 0.00f, muted ? 0.06f : 0.18f);
-        ConfigureOsc(p, 2, Waveform.Noise, muted ? 0.10f : 0.04f, 0f, 0f, 0.001f, 0.03f, 0.00f, 0.00f, 0.03f);
+        ConfigureOsc(p, 0, electric ? Waveform.Saw : Waveform.Triangle, 0.48f, 0f, 0f, 0.002f, muted ? 0.10f : 0.18f, 0.00f, muted ? 0.12f : 0.22f, muted ? 0.08f : 0.25f, envelopeMode: EnvelopeMode.OneShot);
+        ConfigureOsc(p, 1, Waveform.Sine, 0.26f, 7f, 0f, 0.001f, 0.10f, 0.00f, 0.00f, muted ? 0.06f : 0.18f, envelopeMode: EnvelopeMode.OneShot);
+        ConfigureOsc(p, 2, Waveform.Noise, muted ? 0.10f : 0.04f, 0f, 0f, 0.001f, 0.03f, 0.00f, 0.00f, 0.03f, envelopeMode: EnvelopeMode.OneShot);
         DisableOsc(p, 3);
         p.FilterType = FilterType.LowPass;
         p.FilterCutoffHz = muted ? 2600f : (electric ? 4200f : 5200f);
@@ -182,7 +182,7 @@ internal static class GmPresetCatalog
         }
         else
         {
-            ConfigureOsc(p, 2, Waveform.Noise, 0.06f, 0f, 0f, 0.001f, 0.04f, 0.00f, 0.00f, 0.04f);
+            ConfigureOsc(p, 2, Waveform.Noise, 0.06f, 0f, 0f, 0.001f, 0.04f, 0.00f, 0.00f, 0.04f, envelopeMode: EnvelopeMode.OneShot);
         }
         DisableOsc(p, 3);
         p.FilterType = FilterType.LowPass;
@@ -336,9 +336,9 @@ internal static class GmPresetCatalog
 
     private static void ConfigureEthnic(SynthParameters p, bool plucked)
     {
-        ConfigureOsc(p, 0, plucked ? Waveform.Saw : Waveform.Square, 0.46f, 0f, 0f, 0.002f, 0.14f, 0.00f, 0.22f, 0.20f, pulseWidth: plucked ? 0.50f : 0.28f, pwmRate: plucked ? 0f : 0.8f);
-        ConfigureOsc(p, 1, Waveform.Sine, 0.18f, plucked ? 7f : 14f, 0f, 0.001f, 0.10f, 0.00f, 0.00f, 0.14f);
-        ConfigureOsc(p, 2, Waveform.Noise, plucked ? 0.04f : 0.08f, 0f, 0f, 0.001f, 0.04f, 0.00f, 0.00f, 0.04f);
+        ConfigureOsc(p, 0, plucked ? Waveform.Saw : Waveform.Square, 0.46f, 0f, 0f, 0.002f, 0.14f, 0.00f, 0.22f, 0.20f, pulseWidth: plucked ? 0.50f : 0.28f, pwmRate: plucked ? 0f : 0.8f, envelopeMode: EnvelopeMode.OneShot);
+        ConfigureOsc(p, 1, Waveform.Sine, 0.18f, plucked ? 7f : 14f, 0f, 0.001f, 0.10f, 0.00f, 0.00f, 0.14f, envelopeMode: EnvelopeMode.OneShot);
+        ConfigureOsc(p, 2, Waveform.Noise, plucked ? 0.04f : 0.08f, 0f, 0f, 0.001f, 0.04f, 0.00f, 0.00f, 0.04f, envelopeMode: EnvelopeMode.OneShot);
         DisableOsc(p, 3);
         p.FilterType = FilterType.LowPass;
         p.FilterCutoffHz = plucked ? 3600f : 2200f;
@@ -352,15 +352,15 @@ internal static class GmPresetCatalog
 
     private static void ConfigurePercussive(SynthParameters p, bool tuned)
     {
-        ConfigureOsc(p, 0, tuned ? Waveform.Sine : Waveform.Triangle, tuned ? 0.74f : 0.46f, 0f, 0f, 0.001f, tuned ? 0.55f : 0.18f, 0.00f, 0.00f, tuned ? 0.80f : 0.40f);
-        ConfigureOsc(p, 1, tuned ? Waveform.Triangle : Waveform.Noise, tuned ? 0.18f : 0.30f, 12f, 0f, 0.001f, tuned ? 0.28f : 0.20f, 0.00f, 0.00f, tuned ? 0.50f : 0.24f);
+        ConfigureOsc(p, 0, tuned ? Waveform.Sine : Waveform.Triangle, tuned ? 0.74f : 0.46f, 0f, 0f, 0.001f, tuned ? 0.55f : 0.18f, 0.00f, 0.00f, tuned ? 0.80f : 0.40f, envelopeMode: EnvelopeMode.OneShot);
+        ConfigureOsc(p, 1, tuned ? Waveform.Triangle : Waveform.Noise, tuned ? 0.18f : 0.30f, 12f, 0f, 0.001f, tuned ? 0.28f : 0.20f, 0.00f, 0.00f, tuned ? 0.50f : 0.24f, envelopeMode: EnvelopeMode.OneShot);
         if (tuned)
         {
             DisableOsc(p, 2);
         }
         else
         {
-            ConfigureOsc(p, 2, Waveform.Sine, 0.18f, -1200f, 0f, 0.001f, 0.24f, 0.00f, 0.00f, 0.28f);
+            ConfigureOsc(p, 2, Waveform.Sine, 0.18f, -1200f, 0f, 0.001f, 0.24f, 0.00f, 0.00f, 0.28f, envelopeMode: EnvelopeMode.OneShot);
         }
         DisableOsc(p, 3);
         p.FilterType = FilterType.LowPass;
@@ -410,7 +410,8 @@ internal static class GmPresetCatalog
         float glideSeconds,
         float pulseWidth = 0.50f,
         float pwmRate = 0f,
-        float pan = 0f)
+        float pan = 0f,
+        EnvelopeMode envelopeMode = EnvelopeMode.Sustain)
     {
         OscillatorParameters osc = parameters.GetOscillator(index);
         osc.Enabled = true;
@@ -427,6 +428,7 @@ internal static class GmPresetCatalog
         osc.PulseWidth = pulseWidth;
         osc.PwmRateHz = pwmRate;
         osc.Pan = pan;
+        osc.EnvelopeMode = envelopeMode;
     }
 
     private static void DisableOsc(SynthParameters parameters, int index)
@@ -440,5 +442,6 @@ internal static class GmPresetCatalog
         osc.GlideSeconds = 0f;
         osc.PwmRateHz = 0f;
         osc.Pan = 0f;
+        osc.EnvelopeMode = EnvelopeMode.Sustain;
     }
 }

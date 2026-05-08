@@ -111,6 +111,8 @@ internal sealed class OscillatorParameters
 
     public float Pan { get; set; } = 0f;
 
+    public EnvelopeMode EnvelopeMode { get; set; } = EnvelopeMode.Sustain;
+
     public float AttackSeconds { get; set; } = 0.05f;
 
     public float DecaySeconds { get; set; } = 0.18f;
@@ -131,6 +133,7 @@ internal sealed class OscillatorParameters
         PulseWidth = 0.50f;
         PwmRateHz = 0f;
         Pan = 0f;
+        EnvelopeMode = EnvelopeMode.Sustain;
         AttackSeconds = 0.05f;
         DecaySeconds = 0.18f;
         SustainLevel = 0.72f;
