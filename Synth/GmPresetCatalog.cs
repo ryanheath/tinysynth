@@ -73,7 +73,7 @@ internal static class GmPresetCatalog
         p.FilterType = FilterType.LowPass;
         p.FilterCutoffHz = bright ? 7600f : 4600f;
         p.FilterResonance = electric ? 0.28f : 0.10f;
-        p.FilterEnvelopeAmount = bright ? 0.35f : 0.20f;
+        ConfigureRoute(p, 0, ModulationSource.Envelope, ModulationDestination.FilterCutoff, bright ? 0.35f : 0.20f);
         p.ReverbType = ReverbType.Room;
         p.ReverbMix = electric ? 0.18f : 0.12f;
         p.ReverbSize = 0.30f;
@@ -162,7 +162,7 @@ internal static class GmPresetCatalog
         p.FilterType = FilterType.LowPass;
         p.FilterCutoffHz = synth ? 1400f : 2200f;
         p.FilterResonance = synth ? 0.34f : 0.18f;
-        p.FilterEnvelopeAmount = synth ? 0.55f : 0.18f;
+        ConfigureRoute(p, 0, ModulationSource.Envelope, ModulationDestination.FilterCutoff, synth ? 0.55f : 0.18f);
         if (synth)
         {
             p.ChorusType = ChorusType.Light;
@@ -227,7 +227,7 @@ internal static class GmPresetCatalog
         p.FilterType = FilterType.LowPass;
         p.FilterCutoffHz = mellow ? 2600f : 3400f;
         p.FilterResonance = mellow ? 0.16f : 0.24f;
-        p.FilterEnvelopeAmount = 0.45f;
+        ConfigureRoute(p, 0, ModulationSource.Envelope, ModulationDestination.FilterCutoff, 0.45f);
         p.ReverbType = ReverbType.Room;
         p.ReverbMix = mellow ? 0.14f : 0.10f;
         p.ReverbSize = 0.34f;
@@ -243,7 +243,7 @@ internal static class GmPresetCatalog
         p.FilterType = FilterType.LowPass;
         p.FilterCutoffHz = clarinet ? 2200f : 2800f;
         p.FilterResonance = 0.22f;
-        p.FilterEnvelopeAmount = 0.18f;
+        ConfigureRoute(p, 0, ModulationSource.Envelope, ModulationDestination.FilterCutoff, 0.18f);
     }
 
     private static void ConfigurePipe(SynthParameters p, bool panFlute)
@@ -277,18 +277,25 @@ internal static class GmPresetCatalog
         p.FilterType = FilterType.LowPass;
         p.FilterCutoffHz = square ? 2800f : 5400f;
         p.FilterResonance = square ? 0.18f : 0.24f;
-        p.FilterEnvelopeAmount = square ? 0.40f : 0.34f;
+        ConfigureRoute(p, 0, ModulationSource.Envelope, ModulationDestination.FilterCutoff, square ? 0.40f : 0.34f);
         p.DelayType = DelayType.Tape;
         p.DelayMix = square ? 0.16f : 0.12f;
         p.DelayTimeSeconds = 0.24f;
         p.DelayFeedback = 0.28f;
         if (square)
         {
+            p.GetOscillator(0).PwmRateHz = 0f;
+            ConfigureLfo(p.Lfo1, ModulationLfoShape.Sine, 3.2f, 0.75f);
+            ConfigureRoute(p, 1, ModulationSource.Lfo1, ModulationDestination.PulseWidth, 0.38f, oscillatorIndex: 0);
             p.ChorusType = ChorusType.Light;
             p.ChorusMix = 0.10f;
             p.ChorusRateHz = 0.6f;
             p.ChorusDepth = 0.18f;
             p.ChorusTremoloDepth = 0.09f;
+        }
+        else
+        {
+            ConfigureRoute(p, 1, ModulationSource.KeyTrack, ModulationDestination.FilterCutoff, 0.20f);
         }
     }
 
@@ -301,6 +308,12 @@ internal static class GmPresetCatalog
         p.FilterType = FilterType.LowPass;
         p.FilterCutoffHz = airy ? 2800f : 2200f;
         p.FilterResonance = airy ? 0.14f : 0.12f;
+        p.GetOscillator(2).PwmRateHz = 0f;
+        ConfigureLfo(p.Lfo1, ModulationLfoShape.Sine, airy ? 0.22f : 0.30f, 0.85f);
+        ConfigureLfo(p.Lfo2, ModulationLfoShape.Triangle, airy ? 0.12f : 0.18f, 0.65f);
+        ConfigureRoute(p, 0, ModulationSource.Lfo1, ModulationDestination.Pan, airy ? 0.18f : 0.14f);
+        ConfigureRoute(p, 1, ModulationSource.Lfo2, ModulationDestination.PulseWidth, airy ? 0.20f : 0.26f, oscillatorIndex: 2);
+        ConfigureRoute(p, 2, ModulationSource.Envelope, ModulationDestination.FilterCutoff, airy ? 0.16f : 0.22f);
         p.ChorusType = airy ? ChorusType.Wide : ChorusType.Ensemble;
         p.ChorusMix = airy ? 0.24f : 0.20f;
         p.ChorusRateHz = 0.22f;
@@ -321,9 +334,11 @@ internal static class GmPresetCatalog
         p.FilterType = FilterType.BandPass;
         p.FilterCutoffHz = beam ? 1500f : 1000f;
         p.FilterResonance = beam ? 0.36f : 0.26f;
-        p.FilterEnvelopeAmount = beam ? 0.80f : 0.40f;
-        p.FilterLfoDepth = beam ? 0.55f : 0.28f;
-        p.FilterLfoRateHz = beam ? 1.20f : 0.30f;
+        ConfigureLfo(p.Lfo1, beam ? ModulationLfoShape.Saw : ModulationLfoShape.Sine, beam ? 1.20f : 0.30f, 1f);
+        ConfigureLfo(p.Lfo2, beam ? ModulationLfoShape.Triangle : ModulationLfoShape.Sine, beam ? 0.38f : 0.18f, 0.80f);
+        ConfigureRoute(p, 0, ModulationSource.Envelope, ModulationDestination.FilterCutoff, beam ? 0.80f : 0.40f);
+        ConfigureRoute(p, 1, ModulationSource.Lfo1, ModulationDestination.FilterCutoff, beam ? 0.55f : 0.28f);
+        ConfigureRoute(p, 2, ModulationSource.Lfo2, ModulationDestination.Pan, beam ? 0.22f : 0.12f);
         p.DelayType = beam ? DelayType.PingPong : DelayType.Tape;
         p.DelayMix = beam ? 0.22f : 0.16f;
         p.DelayTimeSeconds = beam ? 0.28f : 0.42f;
@@ -332,6 +347,10 @@ internal static class GmPresetCatalog
         p.ReverbMix = beam ? 0.14f : 0.24f;
         p.ReverbSize = 0.76f;
         p.ReverbDamping = beam ? 0.18f : 0.32f;
+        if (!beam)
+        {
+            ConfigureRoute(p, 3, ModulationSource.Lfo2, ModulationDestination.ReverbMix, 0.12f);
+        }
     }
 
     private static void ConfigureEthnic(SynthParameters p, bool plucked)
@@ -381,8 +400,9 @@ internal static class GmPresetCatalog
         p.FilterType = burst ? FilterType.BandPass : FilterType.HighPass;
         p.FilterCutoffHz = burst ? 950f : 3200f;
         p.FilterResonance = burst ? 0.34f : 0.18f;
-        p.FilterLfoDepth = burst ? 0.22f : 0.16f;
-        p.FilterLfoRateHz = burst ? 5.5f : 0.24f;
+        ConfigureLfo(p.Lfo1, burst ? ModulationLfoShape.Square : ModulationLfoShape.Sine, burst ? 5.5f : 0.24f, 1f);
+        ConfigureRoute(p, 0, ModulationSource.Lfo1, ModulationDestination.FilterCutoff, burst ? 0.22f : 0.16f);
+        ConfigureRoute(p, 1, ModulationSource.Lfo1, ModulationDestination.Pan, burst ? 0.35f : 0.10f);
         p.ReverbType = burst ? ReverbType.Room : ReverbType.Hall;
         p.ReverbMix = burst ? 0.08f : 0.24f;
         p.ReverbSize = burst ? 0.26f : 0.82f;
@@ -393,7 +413,29 @@ internal static class GmPresetCatalog
             p.DelayMix = 0.14f;
             p.DelayTimeSeconds = 0.12f;
             p.DelayFeedback = 0.20f;
+            ConfigureRoute(p, 2, ModulationSource.Lfo1, ModulationDestination.DelayMix, 0.10f);
         }
+        else
+        {
+            ConfigureLfo(p.Lfo2, ModulationLfoShape.Triangle, 0.08f, 0.60f);
+            ConfigureRoute(p, 2, ModulationSource.Lfo2, ModulationDestination.ReverbMix, 0.08f);
+        }
+    }
+
+    private static void ConfigureLfo(ModulationLfoParameters lfo, ModulationLfoShape shape, float rateHz, float depth)
+    {
+        lfo.Shape = shape;
+        lfo.RateHz = rateHz;
+        lfo.Depth = depth;
+    }
+
+    private static void ConfigureRoute(SynthParameters parameters, int routeIndex, ModulationSource source, ModulationDestination destination, float amount, int oscillatorIndex = -1)
+    {
+        ModulationRoute route = parameters.GetModulationRoute(routeIndex);
+        route.Source = source;
+        route.Destination = destination;
+        route.Amount = amount;
+        route.OscillatorIndex = oscillatorIndex;
     }
 
     private static void ConfigureOsc(

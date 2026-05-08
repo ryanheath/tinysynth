@@ -89,13 +89,6 @@ internal static class SynthRenderer
             Rectangle buttonBounds = new(area.X + (column * (buttonWidth + buttonGap)), area.Y + (row * (buttonHeight + buttonGap)), buttonWidth, buttonHeight);
             bool isSelected = currentValue == waveforms[i];
             bool isHovered = Contains(buttonBounds, mousePosition);
-            string buttonLabel = waveforms[i] switch
-            {
-                Waveform.SuperSaw => "SuperSaw",
-                Waveform.PinkNoise => "Pink Noise",
-                _ => waveforms[i].ToString()
-            };
-            const int buttonFontSize = 16;
             Color fill = enabled
                 ? (isSelected ? selectedColor : (isHovered ? new Color(245, 248, 255, 255) : panelColor))
                 : new Color(236, 239, 245, 255);
@@ -106,7 +99,7 @@ internal static class SynthRenderer
 
             Graphics.DrawRectangleRec(buttonBounds, fill);
             Graphics.DrawRectangleLinesEx(buttonBounds, isSelected ? 2.5f : 1f, outline);
-            DrawCenteredWrappedLabel(buttonBounds, buttonLabel, buttonFontSize, buttonTextColor);
+            DrawWaveformPreview(buttonBounds, waveforms[i], buttonTextColor, outline);
 
             if (enabled && mousePressed && isHovered)
             {
@@ -128,7 +121,7 @@ internal static class SynthRenderer
         Color selectedBorderColor,
         Color textColor)
     {
-        string[] labels = ["Presets", "Oscillator", "Filter", "FX"];
+        string[] labels = ["Presets", "Oscillator", "Filter", "Mod", "FX"];
         float buttonGap = 10f;
         float buttonWidth = (area.Width - (buttonGap * (labels.Length - 1))) / labels.Length;
 
@@ -283,6 +276,157 @@ internal static class SynthRenderer
                 EnvelopeMode.OneShot => "One-shot",
                 _ => "Sustain"
             });
+    }
+
+    public static ModulationLfoShape DrawModulationLfoShapeButtons(
+        Rectangle area,
+        ModulationLfoShape currentValue,
+        Vector2 mousePosition,
+        bool mousePressed,
+        Color panelColor,
+        Color borderColor,
+        Color selectedColor,
+        Color selectedBorderColor,
+        Color textColor)
+    {
+        ModulationLfoShape[] lfoShapes = [ModulationLfoShape.Sine, ModulationLfoShape.Triangle, ModulationLfoShape.Saw, ModulationLfoShape.Square];
+        float buttonGap = 8f;
+        float buttonWidth = (area.Width - (buttonGap * (lfoShapes.Length - 1))) / lfoShapes.Length;
+
+        for (int i = 0; i < lfoShapes.Length; i++)
+        {
+            Rectangle buttonBounds = new(area.X + (i * (buttonWidth + buttonGap)), area.Y, buttonWidth, area.Height);
+            bool isSelected = currentValue == lfoShapes[i];
+            bool isHovered = Contains(buttonBounds, mousePosition);
+            Color fill = isSelected ? selectedColor : (isHovered ? new Color(245, 248, 255, 255) : panelColor);
+            Color outline = isSelected ? selectedBorderColor : borderColor;
+
+            Graphics.DrawRectangleRec(buttonBounds, fill);
+            Graphics.DrawRectangleLinesEx(buttonBounds, isSelected ? 2.5f : 1f, outline);
+            DrawModulationShapePreview(buttonBounds, lfoShapes[i], textColor, outline);
+
+            if (mousePressed && isHovered)
+            {
+                currentValue = lfoShapes[i];
+            }
+        }
+
+        return currentValue;
+    }
+
+    public static float DrawKnobSlider(
+        int index,
+        ref int activeSlider,
+        bool enabled,
+        string label,
+        string valueLabel,
+        Rectangle bounds,
+        float value,
+        float minValue,
+        float maxValue,
+        Vector2 mousePosition,
+        bool mousePressed,
+        bool mouseDown,
+        Color accentColor,
+        Color accentSoftColor,
+        Color borderColor,
+        Color panelColor,
+        Color textColor,
+        Color mutedTextColor)
+    {
+        Rectangle knobBounds = new(bounds.X + ((bounds.Width - 34f) / 2f), bounds.Y + 22, 34f, 34f);
+        Rectangle dragBounds = new(bounds.X, knobBounds.Y - 12f, bounds.Width, knobBounds.Height + 24f);
+        Color effectiveTextColor = enabled ? textColor : new Color(134, 143, 160, 255);
+        Color effectiveMutedTextColor = enabled ? mutedTextColor : new Color(160, 168, 183, 255);
+        Color effectivePanelColor = enabled ? panelColor : new Color(243, 245, 249, 255);
+        Color effectiveBorderColor = enabled ? borderColor : new Color(205, 211, 222, 255);
+        Color effectiveAccentSoftColor = enabled ? accentSoftColor : new Color(224, 228, 236, 255);
+        Color effectiveAccentColor = enabled ? accentColor : new Color(182, 189, 201, 255);
+
+        if (enabled && mousePressed && Contains(knobBounds, mousePosition))
+        {
+            activeSlider = index;
+        }
+
+        if (enabled && mouseDown && activeSlider == index)
+        {
+            float normalized = GetKnobDragRatio(mousePosition, knobBounds, dragBounds);
+            value = minValue + ((maxValue - minValue) * normalized);
+        }
+
+        float ratio = (value - minValue) / (maxValue - minValue);
+
+        Graphics.DrawText(label, (int)bounds.X, (int)bounds.Y, 18, effectiveTextColor);
+        Graphics.DrawText(valueLabel, (int)(bounds.X + bounds.Width - 60), (int)bounds.Y, 18, effectiveMutedTextColor);
+        DrawKnob(knobBounds, ratio, effectivePanelColor, effectiveBorderColor, effectiveAccentSoftColor, effectiveAccentColor);
+
+        return Math.Clamp(value, minValue, maxValue);
+    }
+
+    public static ModulationSource DrawModulationSourceCycler(
+        Rectangle area,
+        ModulationSource currentValue,
+        bool enabled,
+        Vector2 mousePosition,
+        bool mousePressed,
+        Color panelColor,
+        Color borderColor,
+        Color selectedColor,
+        Color selectedBorderColor,
+        Color textColor)
+    {
+        return DrawEnumCycler(area, currentValue, enabled, mousePosition, mousePressed, panelColor, borderColor, selectedColor, selectedBorderColor, textColor, static value => value switch
+        {
+            ModulationSource.Lfo1 => "LFO 1",
+            ModulationSource.Lfo2 => "LFO 2",
+            ModulationSource.Envelope => "Envelope",
+            ModulationSource.KeyTrack => "Key track",
+            _ => "None"
+        });
+    }
+
+    public static ModulationDestination DrawModulationDestinationCycler(
+        Rectangle area,
+        ModulationDestination currentValue,
+        bool enabled,
+        Vector2 mousePosition,
+        bool mousePressed,
+        Color panelColor,
+        Color borderColor,
+        Color selectedColor,
+        Color selectedBorderColor,
+        Color textColor)
+    {
+        return DrawEnumCycler(area, currentValue, enabled, mousePosition, mousePressed, panelColor, borderColor, selectedColor, selectedBorderColor, textColor, static value => value switch
+        {
+            ModulationDestination.FilterCutoff => "Cutoff",
+            ModulationDestination.FilterResonance => "Resonance",
+            ModulationDestination.PulseWidth => "Pulse",
+            ModulationDestination.Lfo1Rate => "LFO 1 rate",
+            ModulationDestination.Lfo2Rate => "LFO 2 rate",
+            ModulationDestination.ChorusMix => "Chorus mix",
+            ModulationDestination.DelayMix => "Delay mix",
+            ModulationDestination.ReverbMix => "Reverb mix",
+            _ => value.ToString()
+        });
+    }
+
+    public static int DrawModulationOscillatorTargetCycler(
+        Rectangle area,
+        int currentValue,
+        bool enabled,
+        Vector2 mousePosition,
+        bool mousePressed,
+        Color panelColor,
+        Color borderColor,
+        Color selectedColor,
+        Color selectedBorderColor,
+        Color textColor)
+    {
+        string[] labels = ["All", "Osc 1", "Osc 2", "Osc 3", "Osc 4"];
+        int normalizedValue = Math.Clamp(currentValue + 1, 0, labels.Length - 1);
+        normalizedValue = DrawIndexedCycler(area, normalizedValue, enabled, mousePosition, mousePressed, panelColor, borderColor, selectedColor, selectedBorderColor, textColor, labels);
+        return normalizedValue - 1;
     }
 
     public static int DrawPresetFamilyButtons(
@@ -454,6 +598,117 @@ internal static class SynthRenderer
         Graphics.DrawRectangleRounded(trackBounds, 0.5f, 8, value ? accentSoftColor : panelColor);
         Graphics.DrawRectangleRoundedLinesEx(trackBounds, 0.5f, 8, 1.5f, value ? accentColor : borderColor);
         Graphics.DrawRectangleRounded(knobBounds, 0.5f, 8, value ? accentColor : mutedTextColor);
+    }
+
+    private static void DrawModulationShapePreview(Rectangle bounds, ModulationLfoShape shape, Color waveColor, Color borderColor)
+    {
+        Rectangle previewBounds = new(bounds.X + 6f, bounds.Y + 7f, bounds.Width - 12f, bounds.Height - 14f);
+        float centerY = previewBounds.Y + (previewBounds.Height / 2f);
+        Graphics.DrawLineEx(new Vector2(previewBounds.X, centerY), new Vector2(previewBounds.X + previewBounds.Width, centerY), 1f, new Color(borderColor.R, borderColor.G, borderColor.B, 90));
+
+        const int pointCount = 18;
+        Vector2 previousPoint = new(previewBounds.X, GetModulationShapePreviewY(shape, 0f, previewBounds));
+        for (int i = 1; i < pointCount; i++)
+        {
+            float t = i / (pointCount - 1f);
+            Vector2 point = new(previewBounds.X + (previewBounds.Width * t), GetModulationShapePreviewY(shape, t, previewBounds));
+            Graphics.DrawLineEx(previousPoint, point, 2f, waveColor);
+            previousPoint = point;
+        }
+    }
+
+    private static float GetModulationShapePreviewY(ModulationLfoShape shape, float t, Rectangle bounds)
+    {
+        float amplitude = bounds.Height * 0.38f;
+        float centerY = bounds.Y + (bounds.Height / 2f);
+        float phase = t * MathF.Tau;
+        float sample = shape switch
+        {
+            ModulationLfoShape.Sine => MathF.Sin(phase),
+            ModulationLfoShape.Triangle => 1f - (4f * MathF.Abs(t - 0.5f)),
+            ModulationLfoShape.Saw => 1f - (2f * t),
+            ModulationLfoShape.Square => MathF.Sin(phase) >= 0f ? 1f : -1f,
+            _ => MathF.Sin(phase)
+        };
+
+        return centerY - (sample * amplitude);
+    }
+
+    public static bool DrawCheckbox(
+        Rectangle bounds,
+        bool value,
+        bool enabled,
+        Vector2 mousePosition,
+        bool mousePressed,
+        Color accentColor,
+        Color accentSoftColor,
+        Color borderColor,
+        Color panelColor)
+    {
+        bool isHovered = Contains(bounds, mousePosition);
+        Color fill = enabled
+            ? (value ? accentSoftColor : (isHovered ? new Color(245, 248, 255, 255) : panelColor))
+            : new Color(236, 239, 245, 255);
+        Color outline = enabled
+            ? (value ? accentColor : borderColor)
+            : new Color(194, 201, 214, 255);
+
+        Graphics.DrawRectangleRec(bounds, fill);
+        Graphics.DrawRectangleLinesEx(bounds, value ? 2f : 1f, outline);
+
+        if (value)
+        {
+            Graphics.DrawLineEx(new Vector2(bounds.X + 4, bounds.Y + (bounds.Height * 0.55f)), new Vector2(bounds.X + 8, bounds.Y + bounds.Height - 5), 2f, accentColor);
+            Graphics.DrawLineEx(new Vector2(bounds.X + 8, bounds.Y + bounds.Height - 5), new Vector2(bounds.X + bounds.Width - 4, bounds.Y + 4), 2f, accentColor);
+        }
+
+        if (enabled && mousePressed && isHovered)
+        {
+            value = !value;
+        }
+
+        return value;
+    }
+
+    public static float DrawCompactSlider(
+        int index,
+        ref int activeSlider,
+        bool enabled,
+        Rectangle bounds,
+        float value,
+        float minValue,
+        float maxValue,
+        Vector2 mousePosition,
+        bool mousePressed,
+        bool mouseDown,
+        Color accentColor,
+        Color accentSoftColor,
+        Color borderColor,
+        Color panelColor)
+    {
+        float knobSize = MathF.Min(bounds.Width, 24f);
+        Rectangle knobBounds = new(bounds.X + ((bounds.Width - knobSize) / 2f), bounds.Y - 6f, knobSize, knobSize);
+        Rectangle dragBounds = new(bounds.X, knobBounds.Y - 8f, bounds.Width, knobBounds.Height + 16f);
+        Color effectivePanelColor = enabled ? panelColor : new Color(243, 245, 249, 255);
+        Color effectiveBorderColor = enabled ? borderColor : new Color(205, 211, 222, 255);
+        Color effectiveAccentSoftColor = enabled ? accentSoftColor : new Color(224, 228, 236, 255);
+        Color effectiveAccentColor = enabled ? accentColor : new Color(182, 189, 201, 255);
+
+        if (enabled && mousePressed && Contains(knobBounds, mousePosition))
+        {
+            activeSlider = index;
+        }
+
+        if (enabled && mouseDown && activeSlider == index)
+        {
+            float normalized = GetKnobDragRatio(mousePosition, knobBounds, dragBounds);
+            value = minValue + ((maxValue - minValue) * normalized);
+        }
+
+        float ratio = (value - minValue) / (maxValue - minValue);
+        DrawKnob(knobBounds, ratio, effectivePanelColor, effectiveBorderColor, effectiveAccentSoftColor, effectiveAccentColor);
+
+        return Math.Clamp(value, minValue, maxValue);
     }
 
     public static void DrawWaveformScope(Rectangle bounds, float[] samples, int writeIndex, Color waveColor, Color borderColor, Color labelColor)
@@ -788,6 +1043,133 @@ internal static class SynthRenderer
         return currentValue;
     }
 
+    private static int DrawIndexedCycler(
+        Rectangle area,
+        int currentIndex,
+        bool enabled,
+        Vector2 mousePosition,
+        bool mousePressed,
+        Color panelColor,
+        Color borderColor,
+        Color selectedColor,
+        Color selectedBorderColor,
+        Color textColor,
+        IReadOnlyList<string> labels)
+    {
+        currentIndex = Math.Clamp(currentIndex, 0, labels.Count - 1);
+
+        const float arrowWidth = 26f;
+        Rectangle previousBounds = new(area.X, area.Y, arrowWidth, area.Height);
+        Rectangle nextBounds = new(area.X + area.Width - arrowWidth, area.Y, arrowWidth, area.Height);
+        Rectangle valueBounds = new(area.X + arrowWidth + 6f, area.Y, area.Width - ((arrowWidth * 2f) + 12f), area.Height);
+        bool isPreviousHovered = Contains(previousBounds, mousePosition);
+        bool isNextHovered = Contains(nextBounds, mousePosition);
+        bool canInteract = enabled && mousePressed;
+
+        if (canInteract && isPreviousHovered)
+        {
+            currentIndex = (currentIndex - 1 + labels.Count) % labels.Count;
+        }
+        else if (canInteract && isNextHovered)
+        {
+            currentIndex = (currentIndex + 1) % labels.Count;
+        }
+
+        Color inactiveFill = new(236, 239, 245, 255);
+        Color inactiveOutline = new(194, 201, 214, 255);
+        Color inactiveText = new(134, 143, 160, 255);
+        Color effectivePanelColor = enabled ? panelColor : inactiveFill;
+        Color effectiveBorderColor = enabled ? borderColor : inactiveOutline;
+        Color effectiveTextColor = enabled ? textColor : inactiveText;
+
+        DrawCyclerButton(previousBounds, "<", enabled, isPreviousHovered, panelColor, borderColor, selectedColor, selectedBorderColor, effectiveTextColor);
+        Graphics.DrawRectangleRec(valueBounds, enabled ? selectedColor : effectivePanelColor);
+        Graphics.DrawRectangleLinesEx(valueBounds, 1f, enabled ? selectedBorderColor : effectiveBorderColor);
+        DrawCenteredWrappedLabel(valueBounds, labels[currentIndex], 16, effectiveTextColor);
+        DrawCyclerButton(nextBounds, ">", enabled, isNextHovered, panelColor, borderColor, selectedColor, selectedBorderColor, effectiveTextColor);
+
+        return currentIndex;
+    }
+
+    private static TEnum DrawEnumCycler<TEnum>(
+        Rectangle area,
+        TEnum currentValue,
+        bool enabled,
+        Vector2 mousePosition,
+        bool mousePressed,
+        Color panelColor,
+        Color borderColor,
+        Color selectedColor,
+        Color selectedBorderColor,
+        Color textColor,
+        Func<TEnum, string> labelSelector)
+        where TEnum : struct, Enum
+    {
+        TEnum[] values = Enum.GetValues<TEnum>();
+        int currentIndex = Array.IndexOf(values, currentValue);
+        currentIndex = Math.Max(0, currentIndex);
+
+        const float arrowWidth = 26f;
+        Rectangle previousBounds = new(area.X, area.Y, arrowWidth, area.Height);
+        Rectangle nextBounds = new(area.X + area.Width - arrowWidth, area.Y, arrowWidth, area.Height);
+        Rectangle valueBounds = new(area.X + arrowWidth + 6f, area.Y, area.Width - ((arrowWidth * 2f) + 12f), area.Height);
+        bool isPreviousHovered = Contains(previousBounds, mousePosition);
+        bool isNextHovered = Contains(nextBounds, mousePosition);
+        bool canInteract = enabled && mousePressed;
+
+        if (canInteract && isPreviousHovered)
+        {
+            currentIndex = (currentIndex - 1 + values.Length) % values.Length;
+            currentValue = values[currentIndex];
+        }
+        else if (canInteract && isNextHovered)
+        {
+            currentIndex = (currentIndex + 1) % values.Length;
+            currentValue = values[currentIndex];
+        }
+
+        Color inactiveFill = new(236, 239, 245, 255);
+        Color inactiveOutline = new(194, 201, 214, 255);
+        Color inactiveText = new(134, 143, 160, 255);
+        Color effectivePanelColor = enabled ? panelColor : inactiveFill;
+        Color effectiveBorderColor = enabled ? borderColor : inactiveOutline;
+        Color effectiveTextColor = enabled ? textColor : inactiveText;
+
+        DrawCyclerButton(previousBounds, "<", enabled, isPreviousHovered, panelColor, borderColor, selectedColor, selectedBorderColor, effectiveTextColor);
+        Graphics.DrawRectangleRec(valueBounds, enabled ? selectedColor : effectivePanelColor);
+        Graphics.DrawRectangleLinesEx(valueBounds, 1f, enabled ? selectedBorderColor : effectiveBorderColor);
+        DrawCenteredWrappedLabel(valueBounds, labelSelector(currentValue), 16, effectiveTextColor);
+        DrawCyclerButton(nextBounds, ">", enabled, isNextHovered, panelColor, borderColor, selectedColor, selectedBorderColor, effectiveTextColor);
+
+        return currentValue;
+    }
+
+    private static void DrawCyclerButton(
+        Rectangle bounds,
+        string label,
+        bool enabled,
+        bool isHovered,
+        Color panelColor,
+        Color borderColor,
+        Color selectedColor,
+        Color selectedBorderColor,
+        Color textColor)
+    {
+        Color fill = enabled
+            ? (isHovered ? selectedColor : panelColor)
+            : new Color(236, 239, 245, 255);
+        Color outline = enabled
+            ? (isHovered ? selectedBorderColor : borderColor)
+            : new Color(194, 201, 214, 255);
+
+        Graphics.DrawRectangleRec(bounds, fill);
+        Graphics.DrawRectangleLinesEx(bounds, 1f, outline);
+        int textWidth = TextManager.MeasureText(label, 18);
+        int textX = (int)(bounds.X + ((bounds.Width - textWidth) / 2f));
+        int textY = (int)(bounds.Y + ((bounds.Height - 18f) / 2f) - 1f);
+        Graphics.DrawText(label, textX, textY, 18, textColor);
+    }
+
     private static string FormatFamilyLabel(GmInstrumentFamily family)
     {
         return family switch
@@ -841,5 +1223,143 @@ internal static class SynthRenderer
         {
             Graphics.DrawText(currentLine, (int)x, (int)currentY, fontSize, textColor);
         }
+    }
+
+    private static void DrawWaveformPreview(Rectangle bounds, Waveform waveform, Color waveColor, Color borderColor)
+    {
+        Rectangle previewBounds = new(bounds.X + 8f, bounds.Y + 8f, bounds.Width - 16f, bounds.Height - 16f);
+        float centerY = previewBounds.Y + (previewBounds.Height / 2f);
+        Graphics.DrawLineEx(new Vector2(previewBounds.X, centerY), new Vector2(previewBounds.X + previewBounds.Width, centerY), 1f, new Color(borderColor.R, borderColor.G, borderColor.B, 90));
+
+        switch (waveform)
+        {
+            case Waveform.Noise:
+            case Waveform.PinkNoise:
+                DrawNoisePreview(previewBounds, waveColor, waveform == Waveform.PinkNoise);
+                return;
+            case Waveform.Organ:
+                DrawOrganPreview(previewBounds, waveColor);
+                return;
+            case Waveform.SuperSaw:
+                DrawSuperSawPreview(previewBounds, waveColor);
+                return;
+            case Waveform.Metallic:
+                DrawMetallicPreview(previewBounds, waveColor);
+                return;
+        }
+
+        const int pointCount = 28;
+        Vector2 previousPoint = new(previewBounds.X, GetWaveformPreviewY(waveform, 0f, previewBounds));
+        for (int i = 1; i < pointCount; i++)
+        {
+            float t = i / (pointCount - 1f);
+            Vector2 point = new(previewBounds.X + (previewBounds.Width * t), GetWaveformPreviewY(waveform, t, previewBounds));
+            Graphics.DrawLineEx(previousPoint, point, 2f, waveColor);
+            previousPoint = point;
+        }
+    }
+
+    private static float GetWaveformPreviewY(Waveform waveform, float t, Rectangle bounds)
+    {
+        float amplitude = bounds.Height * 0.38f;
+        float centerY = bounds.Y + (bounds.Height / 2f);
+        float phase = t * MathF.Tau;
+        float sample = waveform switch
+        {
+            Waveform.Sine => MathF.Sin(phase),
+            Waveform.Square => MathF.Sin(phase) >= 0f ? 1f : -1f,
+            Waveform.Pulse => (t % 1f) < 0.22f ? 1f : -1f,
+            Waveform.Saw => 1f - (2f * t),
+            Waveform.Triangle => 1f - (4f * MathF.Abs(t - 0.5f)),
+            _ => MathF.Sin(phase)
+        };
+
+        return centerY - (sample * amplitude);
+    }
+
+    private static void DrawNoisePreview(Rectangle bounds, Color waveColor, bool pink)
+    {
+        const int pointCount = 24;
+        Vector2 previousPoint = new(bounds.X, bounds.Y + (bounds.Height * 0.55f));
+        for (int i = 1; i < pointCount; i++)
+        {
+            float t = i / (pointCount - 1f);
+            float baseWave = MathF.Sin((t * MathF.Tau * (pink ? 2.5f : 6f)) + (pink ? 0.4f : 1.3f));
+            float detail = MathF.Sin((t * MathF.Tau * (pink ? 6f : 13f)) + (pink ? 1.2f : 0.2f));
+            float sample = pink ? ((baseWave * 0.7f) + (detail * 0.25f)) : ((baseWave * 0.45f) + (detail * 0.55f));
+            Vector2 point = new(bounds.X + (bounds.Width * t), bounds.Y + (bounds.Height * 0.5f) - (sample * bounds.Height * (pink ? 0.28f : 0.36f)));
+            Graphics.DrawLineEx(previousPoint, point, 2f, waveColor);
+            previousPoint = point;
+        }
+    }
+
+    private static void DrawOrganPreview(Rectangle bounds, Color waveColor)
+    {
+        float x = bounds.X + 6f;
+        float width = 6f;
+        float gap = 4f;
+        float[] heights = [0.35f, 0.58f, 0.82f, 0.62f, 0.42f];
+        foreach (float height in heights)
+        {
+            Rectangle bar = new(x, bounds.Y + bounds.Height - (bounds.Height * height), width, bounds.Height * height);
+            Graphics.DrawRectangleRec(bar, waveColor);
+            x += width + gap;
+        }
+    }
+
+    private static void DrawSuperSawPreview(Rectangle bounds, Color waveColor)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            float offset = i * 4f;
+            Vector2 left = new(bounds.X + offset, bounds.Y + bounds.Height * 0.2f);
+            Vector2 peak = new(bounds.X + (bounds.Width * 0.45f) + offset, bounds.Y + bounds.Height * 0.8f);
+            Vector2 right = new(bounds.X + bounds.Width - 4f + offset, bounds.Y + bounds.Height * 0.2f);
+            Graphics.DrawLineEx(left, peak, 2f, waveColor);
+            Graphics.DrawLineEx(peak, right, 2f, waveColor);
+        }
+    }
+
+    private static void DrawMetallicPreview(Rectangle bounds, Color waveColor)
+    {
+        const int pointCount = 24;
+        Vector2 previousPoint = new(bounds.X, bounds.Y + (bounds.Height * 0.5f));
+        for (int i = 1; i < pointCount; i++)
+        {
+            float t = i / (pointCount - 1f);
+            float sample = (MathF.Sin(t * MathF.Tau * 3f) * 0.6f) + (MathF.Sin(t * MathF.Tau * 9f) * 0.35f);
+            Vector2 point = new(bounds.X + (bounds.Width * t), bounds.Y + (bounds.Height * 0.5f) - (sample * bounds.Height * 0.34f));
+            Graphics.DrawLineEx(previousPoint, point, 2f, waveColor);
+            previousPoint = point;
+        }
+    }
+
+    private static void DrawKnob(Rectangle bounds, float ratio, Color panelColor, Color borderColor, Color accentSoftColor, Color accentColor)
+    {
+        Vector2 center = new(bounds.X + (bounds.Width / 2f), bounds.Y + (bounds.Height / 2f));
+        float radius = MathF.Min(bounds.Width, bounds.Height) * 0.5f;
+        float indicatorLength = radius - 5f;
+        float angle = (-225f + (270f * Math.Clamp(ratio, 0f, 1f))) * (MathF.PI / 180f);
+        Vector2 indicatorEnd = new(center.X + (MathF.Cos(angle) * indicatorLength), center.Y + (MathF.Sin(angle) * indicatorLength));
+
+        Graphics.DrawCircleV(center, radius, panelColor);
+        Graphics.DrawCircleLines((int)center.X, (int)center.Y, radius, borderColor);
+        Graphics.DrawRing(center, radius - 4f, radius - 1f, -225f, -225f + (270f * Math.Clamp(ratio, 0f, 1f)), 32, accentSoftColor);
+        Graphics.DrawLineEx(center, indicatorEnd, 2.5f, accentColor);
+        Graphics.DrawCircleV(center, 3.5f, accentColor);
+    }
+
+    private static float GetKnobDragRatio(Vector2 mousePosition, Rectangle knobBounds, Rectangle dragBounds)
+    {
+        Vector2 center = new(knobBounds.X + (knobBounds.Width / 2f), knobBounds.Y + (knobBounds.Height / 2f));
+        float dx = mousePosition.X - center.X;
+        float dy = center.Y - mousePosition.Y;
+        float horizontalRange = MathF.Max(dragBounds.Width * 0.5f, 1f);
+        float verticalRange = MathF.Max(dragBounds.Height * 0.5f, 1f);
+        float dominantDelta = MathF.Abs(dx) >= MathF.Abs(dy)
+            ? dx / horizontalRange
+            : dy / verticalRange;
+
+        return (Math.Clamp(dominantDelta, -1f, 1f) + 1f) * 0.5f;
     }
 }

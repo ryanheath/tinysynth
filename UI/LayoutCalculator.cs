@@ -1,4 +1,5 @@
 using Raylib_CSharp.Transformations;
+using TinySynth.Synth;
 
 namespace TinySynth.UI;
 
@@ -35,12 +36,24 @@ internal static class LayoutCalculator
         float filterSliderRowThreeY = controlPanel.Y + 348;
         float filterSliderWidth = 190f;
         float filterFullWidth = (filterSliderWidth * 2f) + 18f;
+        float modSectionGap = 22f;
+        float modColumnWidth = (controlPanel.Width - 40f - modSectionGap) * 0.5f;
+        float modLfoShapeWidth = MathF.Min(118f, modColumnWidth * 0.34f);
+        float modLfoKnobWidth = MathF.Min(110f, (modColumnWidth - modLfoShapeWidth - 36f) * 0.5f);
+        float modRouteColumnWidth = modColumnWidth;
+        float modRouteGap = 8f;
+        float modAmountWidth = MathF.Max(74f, MathF.Min(92f, modRouteColumnWidth * 0.16f));
+        float modSourceWidth = (modRouteColumnWidth - (modRouteGap * 3f) - (modAmountWidth * 2f)) * 0.5f;
+        float modDestinationWidth = modSourceWidth;
         float fxColumnGap = 18f;
         float fxColumnWidth = MathF.Min(380f, (controlPanel.Width - 40f - (fxColumnGap * 2f)) / 3f);
         float fxSliderY = controlPanel.Y + 202;
         float fxSliderRowTwoY = controlPanel.Y + 252;
         float fxSliderWidth = fxColumnWidth;
         float fxFullWidth = fxColumnWidth;
+        float modLfo1SliderY = controlPanel.Y + 188;
+        float modLfo2SliderY = controlPanel.Y + 188;
+        float modRouteRowHeight = 34f;
         Rectangle modeButtonsArea = new(controlPanel.X + 20, controlPanel.Y + 66, 420, 36);
         float presetGap = 18f;
         float presetFamilyWidth = MathF.Min(560f, controlPanel.Width * 0.56f);
@@ -50,11 +63,17 @@ internal static class LayoutCalculator
         Rectangle oscillatorButtonsArea = new(controlPanel.X + 20, controlPanel.Y + 118, 360, 36);
         Rectangle waveformButtonsArea = new(controlPanel.X + 20, controlPanel.Y + 184, 500, 56);
         Rectangle filterButtonsArea = new(controlPanel.X + 20, controlPanel.Y + 170, 420, 36);
+        Rectangle modLfo1ShapeArea = new(controlPanel.X + 20, controlPanel.Y + 188, modLfoShapeWidth, 34);
+        Rectangle modLfo2ShapeArea = new(controlPanel.X + 20 + modColumnWidth + modSectionGap, controlPanel.Y + 188, modLfoShapeWidth, 34);
+        float modRoutesY = controlPanel.Y + 286;
+        float routeColumnHeight = (3 * modRouteRowHeight) + (2 * modRouteGap);
+        Rectangle modRouteColumn1Area = new(controlPanel.X + 20, modRoutesY, modRouteColumnWidth, routeColumnHeight);
+        Rectangle modRouteColumn2Area = new(controlPanel.X + 20 + modRouteColumnWidth + modSectionGap, modRoutesY, modRouteColumnWidth, routeColumnHeight);
         Rectangle fxChorusButtonsArea = new(controlPanel.X + 20, controlPanel.Y + 160, fxColumnWidth, 36);
         Rectangle fxReverbButtonsArea = new(controlPanel.X + 20 + fxColumnWidth + fxColumnGap, controlPanel.Y + 160, fxColumnWidth, 36);
         Rectangle fxDelayButtonsArea = new(controlPanel.X + 20 + ((fxColumnWidth + fxColumnGap) * 2f), controlPanel.Y + 160, fxColumnWidth, 36);
         Rectangle filterAnalysisArea = new(controlPanel.X + 20 + filterFullWidth + 38f, controlPanel.Y + 108, controlPanel.Width - ((20 + filterFullWidth + 38f) + 20), controlPanel.Height - 128);
 
-        return new LayoutMetrics(controlPanel, waveformPanel, keyboardPanel, modeButtonsArea, presetFamilyArea, presetOptionArea, oscillatorButtonsArea, filterButtonsArea, fxChorusButtonsArea, fxReverbButtonsArea, fxDelayButtonsArea, filterAnalysisArea, sliderRowOneY, sliderRowTwoY, sliderRowThreeY, sliderWidth, filterSliderY, filterSliderRowTwoY, filterSliderRowThreeY, filterSliderWidth, filterFullWidth, waveformButtonsArea, fxSliderY, fxSliderRowTwoY, fxSliderWidth, fxFullWidth);
+        return new LayoutMetrics(controlPanel, waveformPanel, keyboardPanel, modeButtonsArea, presetFamilyArea, presetOptionArea, oscillatorButtonsArea, filterButtonsArea, fxChorusButtonsArea, fxReverbButtonsArea, fxDelayButtonsArea, filterAnalysisArea, modLfo1ShapeArea, modLfo2ShapeArea, modRouteColumn1Area, modRouteColumn2Area, sliderRowOneY, sliderRowTwoY, sliderRowThreeY, sliderWidth, filterSliderY, filterSliderRowTwoY, filterSliderRowThreeY, filterSliderWidth, filterFullWidth, waveformButtonsArea, modLfo1SliderY, modLfo2SliderY, modLfoKnobWidth, modRouteRowHeight, modRouteGap, modSourceWidth, modDestinationWidth, modAmountWidth, fxSliderY, fxSliderRowTwoY, fxSliderWidth, fxFullWidth);
     }
 }

@@ -18,6 +18,10 @@ internal sealed class SynthEngine
     private float _chorusPhaseB;
     private readonly float[] _delayFilterState = new float[StereoChannelCount];
 
+    private float _lastEnvelopeLevel;
+
+    private int _lastKeyTrackMidiNote = -1;
+
     public SynthEngine(int sampleRate, float masterGain, int defaultMidiNote, int voiceCount)
     {
         _sampleRate = sampleRate;
@@ -134,6 +138,8 @@ internal sealed class SynthEngine
             mixedVoiceCount++;
             slot.Voice.AddToBuffer(audioBuffer, parameters);
         }
+
+        UpdateModulationState();
 
         float mixScale = mixedVoiceCount > 1
             ? 1f / MathF.Sqrt(mixedVoiceCount)
@@ -282,10 +288,167 @@ internal sealed class SynthEngine
 
     private (float Left, float Right) ProcessEffects(float leftInput, float rightInput, SynthParameters parameters)
     {
+        SynthParameters effectiveParameters = GetEffectModulatedParameters(parameters);
         (float left, float right) = ProcessChorus(leftInput, rightInput, parameters);
-        (left, right) = ProcessReverb(left, right, parameters);
-        (left, right) = ProcessDelay(left, right, parameters);
+        (left, right) = ProcessReverb(left, right, effectiveParameters);
+        (left, right) = ProcessDelay(left, right, effectiveParameters);
         return (left, right);
+    }
+
+    private void UpdateModulationState()
+    {
+        _lastEnvelopeLevel = 0f;
+        _lastKeyTrackMidiNote = -1;
+        int voiceCount = 0;
+
+        foreach (VoiceSlot slot in _voiceSlots)
+        {
+            if (slot.Voice.IsIdle || slot.Voice.ActiveMidiNote < 0)
+            {
+                continue;
+            }
+
+            _lastEnvelopeLevel += slot.Voice.ModulationEnvelopeLevel;
+            _lastKeyTrackMidiNote = Math.Max(_lastKeyTrackMidiNote, slot.Voice.ActiveMidiNote);
+            voiceCount++;
+        }
+
+        if (voiceCount > 0)
+        {
+            _lastEnvelopeLevel /= voiceCount;
+        }
+    }
+
+    private SynthParameters GetEffectModulatedParameters(SynthParameters parameters)
+    {
+        float lfo1Value = GetLfoValue(parameters.Lfo1, _chorusPhaseA);
+        float lfo2Value = GetLfoValue(parameters.Lfo2, _chorusPhaseB);
+        float keyTrackValue = _lastKeyTrackMidiNote < 0
+            ? 0f
+            : Math.Clamp((_lastKeyTrackMidiNote - 60f) / 24f, -1f, 1f);
+
+        float chorusMix = Math.Clamp(parameters.ChorusMix + GetModulationAmount(parameters, ModulationDestination.ChorusMix, lfo1Value, lfo2Value, keyTrackValue), 0f, 1f);
+        float delayMix = Math.Clamp(parameters.DelayMix + GetModulationAmount(parameters, ModulationDestination.DelayMix, lfo1Value, lfo2Value, keyTrackValue), 0f, 1f);
+        float reverbMix = Math.Clamp(parameters.ReverbMix + GetModulationAmount(parameters, ModulationDestination.ReverbMix, lfo1Value, lfo2Value, keyTrackValue), 0f, 1f);
+
+        if (MathF.Abs(chorusMix - parameters.ChorusMix) <= 0.0001f
+            && MathF.Abs(delayMix - parameters.DelayMix) <= 0.0001f
+            && MathF.Abs(reverbMix - parameters.ReverbMix) <= 0.0001f)
+        {
+            return parameters;
+        }
+
+        SynthParameters effectiveParameters = CloneParameters(parameters);
+        effectiveParameters.ChorusMix = chorusMix;
+        effectiveParameters.DelayMix = delayMix;
+        effectiveParameters.ReverbMix = reverbMix;
+        return effectiveParameters;
+    }
+
+    private SynthParameters CloneParameters(SynthParameters source)
+    {
+        SynthParameters clone = new()
+        {
+            FilterType = source.FilterType,
+            FilterCutoffHz = source.FilterCutoffHz,
+            FilterResonance = source.FilterResonance,
+            FilterEnvelopeAmount = source.FilterEnvelopeAmount,
+            FilterLfoDepth = source.FilterLfoDepth,
+            FilterLfoRateHz = source.FilterLfoRateHz,
+            ChorusType = source.ChorusType,
+            ChorusMix = source.ChorusMix,
+            ChorusRateHz = source.ChorusRateHz,
+            ChorusDepth = source.ChorusDepth,
+            ChorusTremoloDepth = source.ChorusTremoloDepth,
+            ReverbType = source.ReverbType,
+            ReverbMix = source.ReverbMix,
+            ReverbSize = source.ReverbSize,
+            ReverbDamping = source.ReverbDamping,
+            DelayType = source.DelayType,
+            DelayMix = source.DelayMix,
+            DelayTimeSeconds = source.DelayTimeSeconds,
+            DelayFeedback = source.DelayFeedback
+        };
+
+        clone.Lfo1.Shape = source.Lfo1.Shape;
+        clone.Lfo1.RateHz = source.Lfo1.RateHz;
+        clone.Lfo1.Depth = source.Lfo1.Depth;
+        clone.Lfo2.Shape = source.Lfo2.Shape;
+        clone.Lfo2.RateHz = source.Lfo2.RateHz;
+        clone.Lfo2.Depth = source.Lfo2.Depth;
+
+        for (int i = 0; i < SynthParameters.OscillatorCount; i++)
+        {
+            OscillatorParameters sourceOsc = source.GetOscillator(i);
+            OscillatorParameters targetOsc = clone.GetOscillator(i);
+            targetOsc.Enabled = sourceOsc.Enabled;
+            targetOsc.Waveform = sourceOsc.Waveform;
+            targetOsc.Gain = sourceOsc.Gain;
+            targetOsc.DetuneCents = sourceOsc.DetuneCents;
+            targetOsc.GlideSeconds = sourceOsc.GlideSeconds;
+            targetOsc.VibratoDepthCents = sourceOsc.VibratoDepthCents;
+            targetOsc.VibratoRateHz = sourceOsc.VibratoRateHz;
+            targetOsc.PulseWidth = sourceOsc.PulseWidth;
+            targetOsc.PwmRateHz = sourceOsc.PwmRateHz;
+            targetOsc.Pan = sourceOsc.Pan;
+            targetOsc.EnvelopeMode = sourceOsc.EnvelopeMode;
+            targetOsc.AttackSeconds = sourceOsc.AttackSeconds;
+            targetOsc.DecaySeconds = sourceOsc.DecaySeconds;
+            targetOsc.SustainLevel = sourceOsc.SustainLevel;
+            targetOsc.ReleaseSeconds = sourceOsc.ReleaseSeconds;
+        }
+
+        for (int i = 0; i < SynthParameters.ModulationRouteCount; i++)
+        {
+            ModulationRoute sourceRoute = source.GetModulationRoute(i);
+            ModulationRoute targetRoute = clone.GetModulationRoute(i);
+            targetRoute.Source = sourceRoute.Source;
+            targetRoute.Destination = sourceRoute.Destination;
+            targetRoute.Amount = sourceRoute.Amount;
+            targetRoute.OscillatorIndex = sourceRoute.OscillatorIndex;
+        }
+
+        return clone;
+    }
+
+    private static float GetLfoValue(ModulationLfoParameters parameters, float phase)
+    {
+        float value = parameters.Shape switch
+        {
+            ModulationLfoShape.Sine => MathF.Sin(phase * MathF.Tau),
+            ModulationLfoShape.Triangle => 1f - (4f * MathF.Abs(phase - 0.5f)),
+            ModulationLfoShape.Saw => (2f * phase) - 1f,
+            ModulationLfoShape.Square => phase < 0.5f ? 1f : -1f,
+            _ => 0f
+        };
+
+        return value * Math.Clamp(parameters.Depth, 0f, 1f);
+    }
+
+    private float GetModulationAmount(SynthParameters parameters, ModulationDestination destination, float lfo1Value, float lfo2Value, float keyTrackValue)
+    {
+        float total = 0f;
+
+        foreach (ModulationRoute route in parameters.ModulationRoutes)
+        {
+            if (route.Destination != destination || route.Source == ModulationSource.None || route.Destination == ModulationDestination.None)
+            {
+                continue;
+            }
+
+            float sourceValue = route.Source switch
+            {
+                ModulationSource.Lfo1 => lfo1Value,
+                ModulationSource.Lfo2 => lfo2Value,
+                ModulationSource.Envelope => _lastEnvelopeLevel,
+                ModulationSource.KeyTrack => keyTrackValue,
+                _ => 0f
+            };
+
+            total += sourceValue * route.Amount;
+        }
+
+        return total;
     }
 
     private (float Left, float Right) ProcessChorus(float inputLeft, float inputRight, SynthParameters parameters)

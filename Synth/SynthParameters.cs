@@ -3,6 +3,7 @@ namespace TinySynth.Synth;
 internal sealed class SynthParameters
 {
     public const int OscillatorCount = 4;
+    public const int ModulationRouteCount = 6;
 
     private readonly OscillatorParameters[] _oscillators =
     [
@@ -12,7 +13,23 @@ internal sealed class SynthParameters
         new()
     ];
 
+    private readonly ModulationRoute[] _modulationRoutes =
+    [
+        new(),
+        new(),
+        new(),
+        new(),
+        new(),
+        new()
+    ];
+
     public IReadOnlyList<OscillatorParameters> Oscillators => _oscillators;
+
+    public IReadOnlyList<ModulationRoute> ModulationRoutes => _modulationRoutes;
+
+    public ModulationLfoParameters Lfo1 { get; } = new();
+
+    public ModulationLfoParameters Lfo2 { get; } = new();
 
     public FilterType FilterType { get; set; } = FilterType.Off;
 
@@ -77,15 +94,31 @@ internal sealed class SynthParameters
         DelayTimeSeconds = 0.28f;
         DelayFeedback = 0.30f;
 
+        Lfo1.ResetToDefaults();
+        Lfo2.ResetToDefaults();
+
         foreach (OscillatorParameters oscillator in _oscillators)
         {
             oscillator.ResetToDefaults();
+        }
+
+        foreach (ModulationRoute route in _modulationRoutes)
+        {
+            route.Source = ModulationSource.None;
+            route.Destination = ModulationDestination.None;
+            route.Amount = 0f;
+            route.OscillatorIndex = -1;
         }
     }
 
     public OscillatorParameters GetOscillator(int index)
     {
         return _oscillators[Math.Clamp(index, 0, _oscillators.Length - 1)];
+    }
+
+    public ModulationRoute GetModulationRoute(int index)
+    {
+        return _modulationRoutes[Math.Clamp(index, 0, _modulationRoutes.Length - 1)];
     }
 }
 
