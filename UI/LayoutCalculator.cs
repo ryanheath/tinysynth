@@ -1,5 +1,4 @@
 using Raylib_CSharp.Transformations;
-using TinySynth.Synth;
 
 namespace TinySynth.UI;
 

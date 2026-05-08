@@ -14,12 +14,7 @@ internal static class SynthRenderer
         IReadOnlyList<OscillatorParameters> oscillators,
         int activeOscillatorIndex,
         Vector2 mousePosition,
-        bool mousePressed,
-        Color panelColor,
-        Color borderColor,
-        Color selectedColor,
-        Color selectedBorderColor,
-        Color textColor)
+        bool mousePressed)
     {
         float buttonGap = 10f;
         float buttonWidth = (area.Width - (buttonGap * (SynthParameters.OscillatorCount - 1))) / SynthParameters.OscillatorCount;
@@ -31,12 +26,12 @@ internal static class SynthRenderer
             bool isSelected = activeOscillatorIndex == i;
             bool isHovered = Contains(buttonBounds, mousePosition);
             Color fill = isEnabled
-                ? (isSelected ? selectedColor : (isHovered ? new Color(245, 248, 255, 255) : panelColor))
-                : new Color(236, 239, 245, 255);
+                ? (isSelected ? UiTheme.AccentSoftColor : (isHovered ? UiTheme.PanelHoverColor : UiTheme.PanelColor))
+                : UiTheme.DisabledFillColor;
             Color outline = isEnabled
-                ? (isSelected ? selectedBorderColor : borderColor)
-                : new Color(194, 201, 214, 255);
-            Color buttonTextColor = isEnabled ? textColor : new Color(134, 143, 160, 255);
+                ? (isSelected ? UiTheme.AccentStrongColor : UiTheme.BorderColor)
+                : UiTheme.DisabledBorderColor;
+            Color buttonTextColor = isEnabled ? UiTheme.TextColor : UiTheme.DisabledTextColor;
 
             Graphics.DrawRectangleRec(buttonBounds, fill);
             Graphics.DrawRectangleLinesEx(buttonBounds, isSelected ? 2.5f : 1f, outline);
@@ -57,12 +52,7 @@ internal static class SynthRenderer
         Waveform currentValue,
         bool enabled,
         Vector2 mousePosition,
-        bool mousePressed,
-        Color panelColor,
-        Color borderColor,
-        Color selectedColor,
-        Color selectedBorderColor,
-        Color textColor)
+        bool mousePressed)
     {
         Waveform[] waveforms = [
             Waveform.Sine,
@@ -90,12 +80,12 @@ internal static class SynthRenderer
             bool isSelected = currentValue == waveforms[i];
             bool isHovered = Contains(buttonBounds, mousePosition);
             Color fill = enabled
-                ? (isSelected ? selectedColor : (isHovered ? new Color(245, 248, 255, 255) : panelColor))
-                : new Color(236, 239, 245, 255);
+                ? (isSelected ? UiTheme.AccentSoftColor : (isHovered ? UiTheme.PanelHoverColor : UiTheme.PanelColor))
+                : UiTheme.DisabledFillColor;
             Color outline = enabled
-                ? (isSelected ? selectedBorderColor : borderColor)
-                : new Color(194, 201, 214, 255);
-            Color buttonTextColor = enabled ? textColor : new Color(134, 143, 160, 255);
+                ? (isSelected ? UiTheme.AccentStrongColor : UiTheme.BorderColor)
+                : UiTheme.DisabledBorderColor;
+            Color buttonTextColor = enabled ? UiTheme.TextColor : UiTheme.DisabledTextColor;
 
             Graphics.DrawRectangleRec(buttonBounds, fill);
             Graphics.DrawRectangleLinesEx(buttonBounds, isSelected ? 2.5f : 1f, outline);
@@ -114,12 +104,7 @@ internal static class SynthRenderer
         Rectangle area,
         int selectedIndex,
         Vector2 mousePosition,
-        bool mousePressed,
-        Color panelColor,
-        Color borderColor,
-        Color selectedColor,
-        Color selectedBorderColor,
-        Color textColor)
+        bool mousePressed)
     {
         string[] labels = ["Presets", "Oscillator", "Filter", "Mod", "FX"];
         float buttonGap = 10f;
@@ -131,15 +116,15 @@ internal static class SynthRenderer
             bool isSelected = selectedIndex == i;
             bool isHovered = Contains(buttonBounds, mousePosition);
             const int buttonFontSize = 18;
-            Color fill = isSelected ? selectedColor : (isHovered ? new Color(245, 248, 255, 255) : panelColor);
-            Color outline = isSelected ? selectedBorderColor : borderColor;
+            Color fill = isSelected ? UiTheme.AccentSoftColor : (isHovered ? UiTheme.PanelHoverColor : UiTheme.PanelColor);
+            Color outline = isSelected ? UiTheme.AccentStrongColor : UiTheme.BorderColor;
 
             Graphics.DrawRectangleRec(buttonBounds, fill);
             Graphics.DrawRectangleLinesEx(buttonBounds, isSelected ? 2.5f : 1f, outline);
             int textWidth = TextManager.MeasureText(labels[i], buttonFontSize);
             int textX = (int)(buttonBounds.X + ((buttonBounds.Width - textWidth) / 2f));
             int textY = (int)(buttonBounds.Y + ((buttonBounds.Height - buttonFontSize) / 2f) - 1f);
-            Graphics.DrawText(labels[i], textX, textY, buttonFontSize, textColor);
+            Graphics.DrawText(labels[i], textX, textY, buttonFontSize, UiTheme.TextColor);
 
             if (mousePressed && isHovered)
             {
@@ -154,12 +139,7 @@ internal static class SynthRenderer
         Rectangle area,
         FilterType currentValue,
         Vector2 mousePosition,
-        bool mousePressed,
-        Color panelColor,
-        Color borderColor,
-        Color selectedColor,
-        Color selectedBorderColor,
-        Color textColor)
+        bool mousePressed)
     {
         FilterType[] filterTypes = [FilterType.Off, FilterType.LowPass, FilterType.HighPass, FilterType.BandPass];
         float buttonGap = 10f;
@@ -179,15 +159,15 @@ internal static class SynthRenderer
                 _ => filterTypes[i].ToString()
             };
             const int buttonFontSize = 18;
-            Color fill = isSelected ? selectedColor : (isHovered ? new Color(245, 248, 255, 255) : panelColor);
-            Color outline = isSelected ? selectedBorderColor : borderColor;
+            Color fill = isSelected ? UiTheme.AccentSoftColor : (isHovered ? UiTheme.PanelHoverColor : UiTheme.PanelColor);
+            Color outline = isSelected ? UiTheme.AccentStrongColor : UiTheme.BorderColor;
 
             Graphics.DrawRectangleRec(buttonBounds, fill);
             Graphics.DrawRectangleLinesEx(buttonBounds, isSelected ? 2.5f : 1f, outline);
             int textWidth = TextManager.MeasureText(buttonLabel, buttonFontSize);
             int textX = (int)(buttonBounds.X + ((buttonBounds.Width - textWidth) / 2f));
             int textY = (int)(buttonBounds.Y + ((buttonBounds.Height - buttonFontSize) / 2f) - 1f);
-            Graphics.DrawText(buttonLabel, textX, textY, buttonFontSize, textColor);
+            Graphics.DrawText(buttonLabel, textX, textY, buttonFontSize, UiTheme.TextColor);
 
             if (mousePressed && isHovered)
             {
@@ -202,45 +182,30 @@ internal static class SynthRenderer
         Rectangle area,
         ChorusType currentValue,
         Vector2 mousePosition,
-        bool mousePressed,
-        Color panelColor,
-        Color borderColor,
-        Color selectedColor,
-        Color selectedBorderColor,
-        Color textColor)
+        bool mousePressed)
     {
         ChorusType[] chorusTypes = [ChorusType.Off, ChorusType.Light, ChorusType.Ensemble, ChorusType.Wide];
-        return DrawEnumButtons(area, chorusTypes, currentValue, mousePosition, mousePressed, panelColor, borderColor, selectedColor, selectedBorderColor, textColor, static value => value.ToString());
+        return DrawEnumButtons(area, chorusTypes, currentValue, mousePosition, mousePressed, static value => value.ToString());
     }
 
     public static ReverbType DrawReverbButtons(
         Rectangle area,
         ReverbType currentValue,
         Vector2 mousePosition,
-        bool mousePressed,
-        Color panelColor,
-        Color borderColor,
-        Color selectedColor,
-        Color selectedBorderColor,
-        Color textColor)
+        bool mousePressed)
     {
         ReverbType[] reverbTypes = [ReverbType.Off, ReverbType.Room, ReverbType.Hall, ReverbType.Shimmer];
-        return DrawEnumButtons(area, reverbTypes, currentValue, mousePosition, mousePressed, panelColor, borderColor, selectedColor, selectedBorderColor, textColor, static value => value.ToString());
+        return DrawEnumButtons(area, reverbTypes, currentValue, mousePosition, mousePressed, static value => value.ToString());
     }
 
     public static DelayType DrawDelayButtons(
         Rectangle area,
         DelayType currentValue,
         Vector2 mousePosition,
-        bool mousePressed,
-        Color panelColor,
-        Color borderColor,
-        Color selectedColor,
-        Color selectedBorderColor,
-        Color textColor)
+        bool mousePressed)
     {
         DelayType[] delayTypes = [DelayType.Off, DelayType.Slap, DelayType.PingPong, DelayType.Tape];
-        return DrawEnumButtons(area, delayTypes, currentValue, mousePosition, mousePressed, panelColor, borderColor, selectedColor, selectedBorderColor, textColor, static value => value switch
+        return DrawEnumButtons(area, delayTypes, currentValue, mousePosition, mousePressed, static value => value switch
         {
             DelayType.PingPong => "Ping-pong",
             _ => value.ToString()
@@ -252,12 +217,7 @@ internal static class SynthRenderer
         EnvelopeMode currentValue,
         bool enabled,
         Vector2 mousePosition,
-        bool mousePressed,
-        Color panelColor,
-        Color borderColor,
-        Color selectedColor,
-        Color selectedBorderColor,
-        Color textColor)
+        bool mousePressed)
     {
         EnvelopeMode[] envelopeModes = [EnvelopeMode.Sustain, EnvelopeMode.OneShot];
         return DrawEnumButtons(
@@ -266,11 +226,6 @@ internal static class SynthRenderer
             currentValue,
             mousePosition,
             enabled && mousePressed,
-            enabled ? panelColor : new Color(236, 239, 245, 255),
-            enabled ? borderColor : new Color(194, 201, 214, 255),
-            enabled ? selectedColor : new Color(224, 228, 236, 255),
-            enabled ? selectedBorderColor : new Color(194, 201, 214, 255),
-            enabled ? textColor : new Color(134, 143, 160, 255),
             static value => value switch
             {
                 EnvelopeMode.OneShot => "One-shot",
@@ -282,12 +237,7 @@ internal static class SynthRenderer
         Rectangle area,
         ModulationLfoShape currentValue,
         Vector2 mousePosition,
-        bool mousePressed,
-        Color panelColor,
-        Color borderColor,
-        Color selectedColor,
-        Color selectedBorderColor,
-        Color textColor)
+        bool mousePressed)
     {
         ModulationLfoShape[] lfoShapes = [ModulationLfoShape.Sine, ModulationLfoShape.Triangle, ModulationLfoShape.Saw, ModulationLfoShape.Square];
         float buttonGap = 8f;
@@ -298,12 +248,12 @@ internal static class SynthRenderer
             Rectangle buttonBounds = new(area.X + (i * (buttonWidth + buttonGap)), area.Y, buttonWidth, area.Height);
             bool isSelected = currentValue == lfoShapes[i];
             bool isHovered = Contains(buttonBounds, mousePosition);
-            Color fill = isSelected ? selectedColor : (isHovered ? new Color(245, 248, 255, 255) : panelColor);
-            Color outline = isSelected ? selectedBorderColor : borderColor;
+            Color fill = isSelected ? UiTheme.AccentSoftColor : (isHovered ? UiTheme.PanelHoverColor : UiTheme.PanelColor);
+            Color outline = isSelected ? UiTheme.AccentStrongColor : UiTheme.BorderColor;
 
             Graphics.DrawRectangleRec(buttonBounds, fill);
             Graphics.DrawRectangleLinesEx(buttonBounds, isSelected ? 2.5f : 1f, outline);
-            DrawModulationShapePreview(buttonBounds, lfoShapes[i], textColor, outline);
+            DrawModulationShapePreview(buttonBounds, lfoShapes[i], UiTheme.TextColor, outline);
 
             if (mousePressed && isHovered)
             {
@@ -326,22 +276,16 @@ internal static class SynthRenderer
         float maxValue,
         Vector2 mousePosition,
         bool mousePressed,
-        bool mouseDown,
-        Color accentColor,
-        Color accentSoftColor,
-        Color borderColor,
-        Color panelColor,
-        Color textColor,
-        Color mutedTextColor)
+        bool mouseDown)
     {
         Rectangle knobBounds = new(bounds.X + ((bounds.Width - 34f) / 2f), bounds.Y + 22, 34f, 34f);
         Rectangle dragBounds = new(bounds.X, knobBounds.Y - 12f, bounds.Width, knobBounds.Height + 24f);
-        Color effectiveTextColor = enabled ? textColor : new Color(134, 143, 160, 255);
-        Color effectiveMutedTextColor = enabled ? mutedTextColor : new Color(160, 168, 183, 255);
-        Color effectivePanelColor = enabled ? panelColor : new Color(243, 245, 249, 255);
-        Color effectiveBorderColor = enabled ? borderColor : new Color(205, 211, 222, 255);
-        Color effectiveAccentSoftColor = enabled ? accentSoftColor : new Color(224, 228, 236, 255);
-        Color effectiveAccentColor = enabled ? accentColor : new Color(182, 189, 201, 255);
+        Color effectiveTextColor = enabled ? UiTheme.TextColor : UiTheme.DisabledTextColor;
+        Color effectiveMutedTextColor = enabled ? UiTheme.MutedTextColor : UiTheme.DisabledMutedTextColor;
+        Color effectivePanelColor = enabled ? UiTheme.PanelColor : UiTheme.DisabledPanelColor;
+        Color effectiveBorderColor = enabled ? UiTheme.BorderColor : UiTheme.DisabledBorderColor;
+        Color effectiveAccentSoftColor = enabled ? UiTheme.AccentSoftColor : UiTheme.DisabledAccentSoftColor;
+        Color effectiveAccentColor = enabled ? UiTheme.AccentColor : UiTheme.DisabledAccentColor;
 
         if (enabled && mousePressed && Contains(knobBounds, mousePosition))
         {
@@ -368,14 +312,9 @@ internal static class SynthRenderer
         ModulationSource currentValue,
         bool enabled,
         Vector2 mousePosition,
-        bool mousePressed,
-        Color panelColor,
-        Color borderColor,
-        Color selectedColor,
-        Color selectedBorderColor,
-        Color textColor)
+        bool mousePressed)
     {
-        return DrawEnumCycler(area, currentValue, enabled, mousePosition, mousePressed, panelColor, borderColor, selectedColor, selectedBorderColor, textColor, static value => value switch
+        return DrawEnumCycler(area, currentValue, enabled, mousePosition, mousePressed, static value => value switch
         {
             ModulationSource.Lfo1 => "LFO 1",
             ModulationSource.Lfo2 => "LFO 2",
@@ -390,14 +329,9 @@ internal static class SynthRenderer
         ModulationDestination currentValue,
         bool enabled,
         Vector2 mousePosition,
-        bool mousePressed,
-        Color panelColor,
-        Color borderColor,
-        Color selectedColor,
-        Color selectedBorderColor,
-        Color textColor)
+        bool mousePressed)
     {
-        return DrawEnumCycler(area, currentValue, enabled, mousePosition, mousePressed, panelColor, borderColor, selectedColor, selectedBorderColor, textColor, static value => value switch
+        return DrawEnumCycler(area, currentValue, enabled, mousePosition, mousePressed, static value => value switch
         {
             ModulationDestination.FilterCutoff => "Cutoff",
             ModulationDestination.FilterResonance => "Resonance",
@@ -416,16 +350,11 @@ internal static class SynthRenderer
         int currentValue,
         bool enabled,
         Vector2 mousePosition,
-        bool mousePressed,
-        Color panelColor,
-        Color borderColor,
-        Color selectedColor,
-        Color selectedBorderColor,
-        Color textColor)
+        bool mousePressed)
     {
         string[] labels = ["All", "Osc 1", "Osc 2", "Osc 3", "Osc 4"];
         int normalizedValue = Math.Clamp(currentValue + 1, 0, labels.Length - 1);
-        normalizedValue = DrawIndexedCycler(area, normalizedValue, enabled, mousePosition, mousePressed, panelColor, borderColor, selectedColor, selectedBorderColor, textColor, labels);
+        normalizedValue = DrawIndexedCycler(area, normalizedValue, enabled, mousePosition, mousePressed, labels);
         return normalizedValue - 1;
     }
 
@@ -434,12 +363,7 @@ internal static class SynthRenderer
         IReadOnlyList<GmInstrumentFamily> families,
         int selectedIndex,
         Vector2 mousePosition,
-        bool mousePressed,
-        Color panelColor,
-        Color borderColor,
-        Color selectedColor,
-        Color selectedBorderColor,
-        Color textColor)
+        bool mousePressed)
     {
         const int columns = 4;
         const float gap = 10f;
@@ -455,13 +379,13 @@ internal static class SynthRenderer
             bool isSelected = selectedIndex == i;
             bool isHovered = Contains(buttonBounds, mousePosition);
             string label = FormatFamilyLabel(families[i]);
-            Color fill = isSelected ? selectedColor : (isHovered ? new Color(245, 248, 255, 255) : panelColor);
-            Color outline = isSelected ? selectedBorderColor : borderColor;
+            Color fill = isSelected ? UiTheme.AccentSoftColor : (isHovered ? new Color(245, 248, 255, 255) : UiTheme.PanelColor);
+            Color outline = isSelected ? UiTheme.AccentStrongColor : UiTheme.BorderColor;
             const int fontSize = 18;
 
             Graphics.DrawRectangleRec(buttonBounds, fill);
             Graphics.DrawRectangleLinesEx(buttonBounds, isSelected ? 2.5f : 1f, outline);
-            DrawCenteredWrappedLabel(buttonBounds, label, fontSize, textColor);
+            DrawCenteredWrappedLabel(buttonBounds, label, fontSize, UiTheme.TextColor);
 
             if (mousePressed && isHovered)
             {
@@ -477,13 +401,7 @@ internal static class SynthRenderer
         IReadOnlyList<GmPreset> presets,
         int selectedIndex,
         Vector2 mousePosition,
-        bool mousePressed,
-        Color panelColor,
-        Color borderColor,
-        Color selectedColor,
-        Color selectedBorderColor,
-        Color textColor,
-        Color mutedTextColor)
+        bool mousePressed)
     {
         float gap = 12f;
         float buttonHeight = (area.Height - gap) / Math.Max(1, presets.Count);
@@ -493,13 +411,13 @@ internal static class SynthRenderer
             Rectangle buttonBounds = new(area.X, area.Y + (i * (buttonHeight + gap)), area.Width, buttonHeight);
             bool isSelected = selectedIndex == i;
             bool isHovered = Contains(buttonBounds, mousePosition);
-            Color fill = isSelected ? selectedColor : (isHovered ? new Color(245, 248, 255, 255) : panelColor);
-            Color outline = isSelected ? selectedBorderColor : borderColor;
+            Color fill = isSelected ? UiTheme.AccentSoftColor : (isHovered ? new Color(245, 248, 255, 255) : UiTheme.PanelColor);
+            Color outline = isSelected ? UiTheme.AccentStrongColor : UiTheme.BorderColor;
 
             Graphics.DrawRectangleRec(buttonBounds, fill);
             Graphics.DrawRectangleLinesEx(buttonBounds, isSelected ? 2.5f : 1f, outline);
-            Graphics.DrawText(presets[i].Name, (int)buttonBounds.X + 14, (int)buttonBounds.Y + 12, 20, textColor);
-            DrawWrappedText(presets[i].Description, buttonBounds.X + 14, buttonBounds.Y + 40, buttonBounds.Width - 28, 16, mutedTextColor);
+            Graphics.DrawText(presets[i].Name, (int)buttonBounds.X + 14, (int)buttonBounds.Y + 12, 20, UiTheme.TextColor);
+            DrawWrappedText(presets[i].Description, buttonBounds.X + 14, buttonBounds.Y + 40, buttonBounds.Width - 28, 16, UiTheme.MutedTextColor);
 
             if (mousePressed && isHovered)
             {
@@ -522,21 +440,15 @@ internal static class SynthRenderer
         float maxValue,
         Vector2 mousePosition,
         bool mousePressed,
-        bool mouseDown,
-        Color accentColor,
-        Color accentSoftColor,
-        Color borderColor,
-        Color panelColor,
-        Color textColor,
-        Color mutedTextColor)
+        bool mouseDown)
     {
         Rectangle trackBounds = new(bounds.X, bounds.Y + 22, bounds.Width, bounds.Height);
-        Color effectiveTextColor = enabled ? textColor : new Color(134, 143, 160, 255);
-        Color effectiveMutedTextColor = enabled ? mutedTextColor : new Color(160, 168, 183, 255);
-        Color effectivePanelColor = enabled ? panelColor : new Color(243, 245, 249, 255);
-        Color effectiveBorderColor = enabled ? borderColor : new Color(205, 211, 222, 255);
-        Color effectiveAccentSoftColor = enabled ? accentSoftColor : new Color(224, 228, 236, 255);
-        Color effectiveAccentColor = enabled ? accentColor : new Color(182, 189, 201, 255);
+        Color effectiveTextColor = enabled ? UiTheme.TextColor : UiTheme.DisabledTextColor;
+        Color effectiveMutedTextColor = enabled ? UiTheme.MutedTextColor : UiTheme.DisabledMutedTextColor;
+        Color effectivePanelColor = enabled ? UiTheme.PanelColor : UiTheme.DisabledPanelColor;
+        Color effectiveBorderColor = enabled ? UiTheme.BorderColor : UiTheme.DisabledBorderColor;
+        Color effectiveAccentSoftColor = enabled ? UiTheme.AccentSoftColor : UiTheme.DisabledAccentSoftColor;
+        Color effectiveAccentColor = enabled ? UiTheme.AccentColor : UiTheme.DisabledAccentColor;
 
         if (enabled && mousePressed && Contains(trackBounds, mousePosition))
         {
@@ -567,13 +479,7 @@ internal static class SynthRenderer
     public static void DrawToggle(
         Rectangle bounds,
         string label,
-        bool value,
-        Color accentColor,
-        Color accentSoftColor,
-        Color borderColor,
-        Color panelColor,
-        Color textColor,
-        Color mutedTextColor)
+        bool value)
     {
         const int labelFontSize = 18;
         string stateLabel = value ? "On" : "Off";
@@ -588,23 +494,23 @@ internal static class SynthRenderer
         int maxStateX = (int)(trackBounds.X - 8f - stateWidth);
         int stateX = Math.Min(preferredStateX, maxStateX);
 
-        Graphics.DrawText(label, labelX, labelY, labelFontSize, textColor);
-        Graphics.DrawText(stateLabel, stateX, labelY, labelFontSize, mutedTextColor);
+        Graphics.DrawText(label, labelX, labelY, labelFontSize, UiTheme.TextColor);
+        Graphics.DrawText(stateLabel, stateX, labelY, labelFontSize, UiTheme.MutedTextColor);
 
         float knobSize = 18f;
         float knobX = value ? trackBounds.X + trackBounds.Width - knobSize - 2f : trackBounds.X + 2f;
         Rectangle knobBounds = new(knobX, trackBounds.Y + 2f, knobSize, knobSize);
 
-        Graphics.DrawRectangleRounded(trackBounds, 0.5f, 8, value ? accentSoftColor : panelColor);
-        Graphics.DrawRectangleRoundedLinesEx(trackBounds, 0.5f, 8, 1.5f, value ? accentColor : borderColor);
-        Graphics.DrawRectangleRounded(knobBounds, 0.5f, 8, value ? accentColor : mutedTextColor);
+        Graphics.DrawRectangleRounded(trackBounds, 0.5f, 8, value ? UiTheme.AccentSoftColor : UiTheme.PanelColor);
+        Graphics.DrawRectangleRoundedLinesEx(trackBounds, 0.5f, 8, 1.5f, value ? UiTheme.AccentColor : UiTheme.BorderColor);
+        Graphics.DrawRectangleRounded(knobBounds, 0.5f, 8, value ? UiTheme.AccentColor : UiTheme.MutedTextColor);
     }
 
     private static void DrawModulationShapePreview(Rectangle bounds, ModulationLfoShape shape, Color waveColor, Color borderColor)
     {
         Rectangle previewBounds = new(bounds.X + 6f, bounds.Y + 7f, bounds.Width - 12f, bounds.Height - 14f);
         float centerY = previewBounds.Y + (previewBounds.Height / 2f);
-        Graphics.DrawLineEx(new Vector2(previewBounds.X, centerY), new Vector2(previewBounds.X + previewBounds.Width, centerY), 1f, new Color(borderColor.R, borderColor.G, borderColor.B, 90));
+        Graphics.DrawLineEx(new Vector2(previewBounds.X, centerY), new Vector2(previewBounds.X + previewBounds.Width, centerY), 1f, UiTheme.PreviewGuideColor);
 
         const int pointCount = 18;
         Vector2 previousPoint = new(previewBounds.X, GetModulationShapePreviewY(shape, 0f, previewBounds));
@@ -639,27 +545,23 @@ internal static class SynthRenderer
         bool value,
         bool enabled,
         Vector2 mousePosition,
-        bool mousePressed,
-        Color accentColor,
-        Color accentSoftColor,
-        Color borderColor,
-        Color panelColor)
+        bool mousePressed)
     {
         bool isHovered = Contains(bounds, mousePosition);
         Color fill = enabled
-            ? (value ? accentSoftColor : (isHovered ? new Color(245, 248, 255, 255) : panelColor))
-            : new Color(236, 239, 245, 255);
+            ? (value ? UiTheme.AccentSoftColor : (isHovered ? UiTheme.PanelHoverColor : UiTheme.PanelColor))
+            : UiTheme.DisabledFillColor;
         Color outline = enabled
-            ? (value ? accentColor : borderColor)
-            : new Color(194, 201, 214, 255);
+            ? (value ? UiTheme.AccentColor : UiTheme.BorderColor)
+            : UiTheme.DisabledBorderColor;
 
         Graphics.DrawRectangleRec(bounds, fill);
         Graphics.DrawRectangleLinesEx(bounds, value ? 2f : 1f, outline);
 
         if (value)
         {
-            Graphics.DrawLineEx(new Vector2(bounds.X + 4, bounds.Y + (bounds.Height * 0.55f)), new Vector2(bounds.X + 8, bounds.Y + bounds.Height - 5), 2f, accentColor);
-            Graphics.DrawLineEx(new Vector2(bounds.X + 8, bounds.Y + bounds.Height - 5), new Vector2(bounds.X + bounds.Width - 4, bounds.Y + 4), 2f, accentColor);
+            Graphics.DrawLineEx(new Vector2(bounds.X + 4, bounds.Y + (bounds.Height * 0.55f)), new Vector2(bounds.X + 8, bounds.Y + bounds.Height - 5), 2f, UiTheme.AccentColor);
+            Graphics.DrawLineEx(new Vector2(bounds.X + 8, bounds.Y + bounds.Height - 5), new Vector2(bounds.X + bounds.Width - 4, bounds.Y + 4), 2f, UiTheme.AccentColor);
         }
 
         if (enabled && mousePressed && isHovered)
@@ -680,19 +582,15 @@ internal static class SynthRenderer
         float maxValue,
         Vector2 mousePosition,
         bool mousePressed,
-        bool mouseDown,
-        Color accentColor,
-        Color accentSoftColor,
-        Color borderColor,
-        Color panelColor)
+        bool mouseDown)
     {
         float knobSize = MathF.Min(bounds.Width, 24f);
         Rectangle knobBounds = new(bounds.X + ((bounds.Width - knobSize) / 2f), bounds.Y - 6f, knobSize, knobSize);
         Rectangle dragBounds = new(bounds.X, knobBounds.Y - 8f, bounds.Width, knobBounds.Height + 16f);
-        Color effectivePanelColor = enabled ? panelColor : new Color(243, 245, 249, 255);
-        Color effectiveBorderColor = enabled ? borderColor : new Color(205, 211, 222, 255);
-        Color effectiveAccentSoftColor = enabled ? accentSoftColor : new Color(224, 228, 236, 255);
-        Color effectiveAccentColor = enabled ? accentColor : new Color(182, 189, 201, 255);
+        Color effectivePanelColor = enabled ? UiTheme.PanelColor : UiTheme.DisabledPanelColor;
+        Color effectiveBorderColor = enabled ? UiTheme.BorderColor : UiTheme.DisabledBorderColor;
+        Color effectiveAccentSoftColor = enabled ? UiTheme.AccentSoftColor : UiTheme.DisabledAccentSoftColor;
+        Color effectiveAccentColor = enabled ? UiTheme.AccentColor : UiTheme.DisabledAccentColor;
 
         if (enabled && mousePressed && Contains(knobBounds, mousePosition))
         {
@@ -711,17 +609,17 @@ internal static class SynthRenderer
         return Math.Clamp(value, minValue, maxValue);
     }
 
-    public static void DrawWaveformScope(Rectangle bounds, float[] samples, int writeIndex, Color waveColor, Color borderColor, Color labelColor)
+    public static void DrawWaveformScope(Rectangle bounds, float[] samples, int writeIndex)
     {
-        Graphics.DrawText("Output waveform", (int)bounds.X + 18, (int)bounds.Y + 16, 22, labelColor);
+        Graphics.DrawText("Output waveform", (int)bounds.X + 18, (int)bounds.Y + 16, 22, UiTheme.MutedTextColor);
 
         Rectangle graphBounds = new(bounds.X + 18, bounds.Y + 52, bounds.Width - 36, bounds.Height - 70);
-        Graphics.DrawRectangleRec(graphBounds, new Color(246, 249, 255, 255));
-        Graphics.DrawRectangleLinesEx(graphBounds, 1f, borderColor);
+        Graphics.DrawRectangleRec(graphBounds, UiTheme.AnalysisSurfaceColor);
+        Graphics.DrawRectangleLinesEx(graphBounds, 1f, UiTheme.BorderColor);
 
         Vector2 centerStart = new(graphBounds.X, graphBounds.Y + (graphBounds.Height / 2f));
         Vector2 centerEnd = new(graphBounds.X + graphBounds.Width, graphBounds.Y + (graphBounds.Height / 2f));
-        Graphics.DrawLineV(centerStart, centerEnd, new Color(215, 223, 237, 255));
+        Graphics.DrawLineV(centerStart, centerEnd, UiTheme.ScopeCenterLineColor);
 
         int sampleCount = samples.Length;
         float xStep = graphBounds.Width / (sampleCount - 1);
@@ -734,7 +632,7 @@ internal static class SynthRenderer
         {
             int sampleIndex = (writeIndex + i) % sampleCount;
             Vector2 current = new(graphBounds.X + (xStep * i), centerY - (samples[sampleIndex] * amplitude));
-            Graphics.DrawLineV(previous, current, waveColor);
+            Graphics.DrawLineV(previous, current, UiTheme.AccentStrongColor);
             previous = current;
         }
     }
@@ -746,22 +644,18 @@ internal static class SynthRenderer
         int sampleRate,
         FilterType filterType,
         float cutoffHz,
-        float resonance,
-        Color spectrumColor,
-        Color responseColor,
-        Color borderColor,
-        Color labelColor)
+        float resonance)
     {
-        Graphics.DrawText("Filter analysis", (int)bounds.X + 18, (int)bounds.Y + 16, 22, labelColor);
-        Graphics.DrawText("Recent output spectrum", (int)bounds.X + 18, (int)bounds.Y + 42, 18, labelColor);
+        Graphics.DrawText("Filter analysis", (int)bounds.X + 18, (int)bounds.Y + 16, 22, UiTheme.MutedTextColor);
+        Graphics.DrawText("Recent output spectrum", (int)bounds.X + 18, (int)bounds.Y + 42, 18, UiTheme.MutedTextColor);
 
         Rectangle graphBounds = new(bounds.X + 18, bounds.Y + 76, bounds.Width - 36, bounds.Height - 94);
-        Graphics.DrawRectangleRec(graphBounds, new Color(246, 249, 255, 255));
-        Graphics.DrawRectangleLinesEx(graphBounds, 1f, borderColor);
+        Graphics.DrawRectangleRec(graphBounds, UiTheme.AnalysisSurfaceColor);
+        Graphics.DrawRectangleLinesEx(graphBounds, 1f, UiTheme.BorderColor);
 
-        DrawFilterGrid(graphBounds, borderColor, labelColor);
-        DrawSpectrumCurve(graphBounds, samples, writeIndex, sampleRate, spectrumColor);
-        DrawFilterResponseCurve(graphBounds, sampleRate, filterType, cutoffHz, resonance, responseColor);
+        DrawFilterGrid(graphBounds, UiTheme.BorderColor, UiTheme.MutedTextColor);
+        DrawSpectrumCurve(graphBounds, samples, writeIndex, sampleRate, UiTheme.AccentStrongColor);
+        DrawFilterResponseCurve(graphBounds, sampleRate, filterType, cutoffHz, resonance, UiTheme.AccentColor);
     }
 
     private static void DrawFilterGrid(Rectangle graphBounds, Color borderColor, Color labelColor)
@@ -775,7 +669,7 @@ internal static class SynthRenderer
             Graphics.DrawLineV(
                 new Vector2(x, graphBounds.Y),
                 new Vector2(x, graphBounds.Y + graphBounds.Height),
-                new Color(225, 231, 242, 255));
+                    UiTheme.AnalysisGridColor);
             Graphics.DrawText(frequencyLabels[i], (int)x - 14, (int)graphBounds.Y + (int)graphBounds.Height + 6, 16, labelColor);
         }
 
@@ -785,7 +679,7 @@ internal static class SynthRenderer
             Graphics.DrawLineV(
                 new Vector2(graphBounds.X, y),
                 new Vector2(graphBounds.X + graphBounds.Width, y),
-                new Color(225, 231, 242, 255));
+                UiTheme.AnalysisGridColor);
         }
 
         Graphics.DrawText("0 dB", (int)graphBounds.X + 8, (int)graphBounds.Y + 6, 16, labelColor);
@@ -948,22 +842,16 @@ internal static class SynthRenderer
     public static void DrawKeyboard(
         PianoKeyLayout[] keys,
         IReadOnlySet<int> activeNotes,
-        int hoveredNote,
-        Color whiteKeyColor,
-        Color borderColor,
-        Color blackKeyColor,
-        Color activeWhiteKeyColor,
-        Color activeBlackKeyColor,
-        Color textColor)
+        int hoveredNote)
     {
         foreach (PianoKeyLayout key in keys.Where(static key => !key.IsBlack))
         {
             bool isActive = activeNotes.Contains(key.MidiNote);
             bool isHovered = key.MidiNote == hoveredNote;
-            Color fill = isActive ? activeWhiteKeyColor : (isHovered ? new Color(242, 247, 255, 255) : whiteKeyColor);
+            Color fill = isActive ? UiTheme.AccentSoftColor : (isHovered ? UiTheme.WhiteKeyHoverColor : UiTheme.WhiteKeyColor);
 
             Graphics.DrawRectangleRec(key.Bounds, fill);
-            Graphics.DrawRectangleLinesEx(key.Bounds, 1f, borderColor);
+            Graphics.DrawRectangleLinesEx(key.Bounds, 1f, UiTheme.BorderColor);
 
             if (key.MidiNote % 12 == 0 || key.MidiNote == 21)
             {
@@ -971,7 +859,7 @@ internal static class SynthRenderer
                 int labelWidth = TextManager.MeasureText(key.Label, labelFontSize);
                 int labelX = (int)(key.Bounds.X + ((key.Bounds.Width - labelWidth) / 2f));
                 int labelY = (int)(key.Bounds.Y + key.Bounds.Height - 22);
-                Graphics.DrawText(key.Label, labelX, labelY, labelFontSize, textColor);
+                Graphics.DrawText(key.Label, labelX, labelY, labelFontSize, UiTheme.TextColor);
             }
         }
 
@@ -979,17 +867,17 @@ internal static class SynthRenderer
         {
             bool isActive = activeNotes.Contains(key.MidiNote);
             bool isHovered = key.MidiNote == hoveredNote;
-            Color fill = isActive ? activeBlackKeyColor : (isHovered ? new Color(70, 78, 99, 255) : blackKeyColor);
+            Color fill = isActive ? UiTheme.AccentStrongColor : (isHovered ? UiTheme.DarkKeyHoverColor : UiTheme.DarkKeyColor);
 
             Graphics.DrawRectangleRec(key.Bounds, fill);
-            Graphics.DrawRectangleLinesEx(key.Bounds, 1f, new Color(18, 22, 30, 255));
+            Graphics.DrawRectangleLinesEx(key.Bounds, 1f, UiTheme.DarkKeyBorderColor);
         }
     }
 
-    public static void DrawPanel(Rectangle bounds, Color fillColor, Color outlineColor)
+    public static void DrawPanel(Rectangle bounds, Color fillColor)
     {
         Graphics.DrawRectangleRec(bounds, fillColor);
-        Graphics.DrawRectangleLinesEx(bounds, 1f, outlineColor);
+        Graphics.DrawRectangleLinesEx(bounds, 1f, UiTheme.BorderColor);
     }
 
     public static bool Contains(Rectangle bounds, Vector2 point)
@@ -1006,11 +894,6 @@ internal static class SynthRenderer
         TEnum currentValue,
         Vector2 mousePosition,
         bool mousePressed,
-        Color panelColor,
-        Color borderColor,
-        Color selectedColor,
-        Color selectedBorderColor,
-        Color textColor,
         Func<TEnum, string> labelSelector)
         where TEnum : struct, Enum
     {
@@ -1024,15 +907,15 @@ internal static class SynthRenderer
             bool isHovered = Contains(buttonBounds, mousePosition);
             string buttonLabel = labelSelector(values[i]);
             const int buttonFontSize = 18;
-            Color fill = isSelected ? selectedColor : (isHovered ? new Color(245, 248, 255, 255) : panelColor);
-            Color outline = isSelected ? selectedBorderColor : borderColor;
+            Color fill = isSelected ? UiTheme.AccentSoftColor : (isHovered ? UiTheme.PanelHoverColor : UiTheme.PanelColor);
+            Color outline = isSelected ? UiTheme.AccentStrongColor : UiTheme.BorderColor;
 
             Graphics.DrawRectangleRec(buttonBounds, fill);
             Graphics.DrawRectangleLinesEx(buttonBounds, isSelected ? 2.5f : 1f, outline);
             int textWidth = TextManager.MeasureText(buttonLabel, buttonFontSize);
             int textX = (int)(buttonBounds.X + ((buttonBounds.Width - textWidth) / 2f));
             int textY = (int)(buttonBounds.Y + ((buttonBounds.Height - buttonFontSize) / 2f) - 1f);
-            Graphics.DrawText(buttonLabel, textX, textY, buttonFontSize, textColor);
+            Graphics.DrawText(buttonLabel, textX, textY, buttonFontSize, UiTheme.TextColor);
 
             if (mousePressed && isHovered)
             {
@@ -1049,11 +932,6 @@ internal static class SynthRenderer
         bool enabled,
         Vector2 mousePosition,
         bool mousePressed,
-        Color panelColor,
-        Color borderColor,
-        Color selectedColor,
-        Color selectedBorderColor,
-        Color textColor,
         IReadOnlyList<string> labels)
     {
         currentIndex = Math.Clamp(currentIndex, 0, labels.Count - 1);
@@ -1075,18 +953,18 @@ internal static class SynthRenderer
             currentIndex = (currentIndex + 1) % labels.Count;
         }
 
-        Color inactiveFill = new(236, 239, 245, 255);
-        Color inactiveOutline = new(194, 201, 214, 255);
-        Color inactiveText = new(134, 143, 160, 255);
-        Color effectivePanelColor = enabled ? panelColor : inactiveFill;
-        Color effectiveBorderColor = enabled ? borderColor : inactiveOutline;
-        Color effectiveTextColor = enabled ? textColor : inactiveText;
+        Color inactiveFill = UiTheme.DisabledFillColor;
+        Color inactiveOutline = UiTheme.DisabledBorderColor;
+        Color inactiveText = UiTheme.DisabledTextColor;
+        Color effectivePanelColor = enabled ? UiTheme.PanelColor : inactiveFill;
+        Color effectiveBorderColor = enabled ? UiTheme.BorderColor : inactiveOutline;
+        Color effectiveTextColor = enabled ? UiTheme.TextColor : inactiveText;
 
-        DrawCyclerButton(previousBounds, "<", enabled, isPreviousHovered, panelColor, borderColor, selectedColor, selectedBorderColor, effectiveTextColor);
-        Graphics.DrawRectangleRec(valueBounds, enabled ? selectedColor : effectivePanelColor);
-        Graphics.DrawRectangleLinesEx(valueBounds, 1f, enabled ? selectedBorderColor : effectiveBorderColor);
+        DrawCyclerButton(previousBounds, "<", enabled, isPreviousHovered, effectiveTextColor);
+        Graphics.DrawRectangleRec(valueBounds, enabled ? UiTheme.AccentSoftColor : effectivePanelColor);
+        Graphics.DrawRectangleLinesEx(valueBounds, 1f, enabled ? UiTheme.AccentStrongColor : effectiveBorderColor);
         DrawCenteredWrappedLabel(valueBounds, labels[currentIndex], 16, effectiveTextColor);
-        DrawCyclerButton(nextBounds, ">", enabled, isNextHovered, panelColor, borderColor, selectedColor, selectedBorderColor, effectiveTextColor);
+        DrawCyclerButton(nextBounds, ">", enabled, isNextHovered, effectiveTextColor);
 
         return currentIndex;
     }
@@ -1097,11 +975,6 @@ internal static class SynthRenderer
         bool enabled,
         Vector2 mousePosition,
         bool mousePressed,
-        Color panelColor,
-        Color borderColor,
-        Color selectedColor,
-        Color selectedBorderColor,
-        Color textColor,
         Func<TEnum, string> labelSelector)
         where TEnum : struct, Enum
     {
@@ -1128,18 +1001,18 @@ internal static class SynthRenderer
             currentValue = values[currentIndex];
         }
 
-        Color inactiveFill = new(236, 239, 245, 255);
-        Color inactiveOutline = new(194, 201, 214, 255);
-        Color inactiveText = new(134, 143, 160, 255);
-        Color effectivePanelColor = enabled ? panelColor : inactiveFill;
-        Color effectiveBorderColor = enabled ? borderColor : inactiveOutline;
-        Color effectiveTextColor = enabled ? textColor : inactiveText;
+        Color inactiveFill = UiTheme.DisabledFillColor;
+        Color inactiveOutline = UiTheme.DisabledBorderColor;
+        Color inactiveText = UiTheme.DisabledTextColor;
+        Color effectivePanelColor = enabled ? UiTheme.PanelColor : inactiveFill;
+        Color effectiveBorderColor = enabled ? UiTheme.BorderColor : inactiveOutline;
+        Color effectiveTextColor = enabled ? UiTheme.TextColor : inactiveText;
 
-        DrawCyclerButton(previousBounds, "<", enabled, isPreviousHovered, panelColor, borderColor, selectedColor, selectedBorderColor, effectiveTextColor);
-        Graphics.DrawRectangleRec(valueBounds, enabled ? selectedColor : effectivePanelColor);
-        Graphics.DrawRectangleLinesEx(valueBounds, 1f, enabled ? selectedBorderColor : effectiveBorderColor);
+        DrawCyclerButton(previousBounds, "<", enabled, isPreviousHovered, effectiveTextColor);
+        Graphics.DrawRectangleRec(valueBounds, enabled ? UiTheme.AccentSoftColor : effectivePanelColor);
+        Graphics.DrawRectangleLinesEx(valueBounds, 1f, enabled ? UiTheme.AccentStrongColor : effectiveBorderColor);
         DrawCenteredWrappedLabel(valueBounds, labelSelector(currentValue), 16, effectiveTextColor);
-        DrawCyclerButton(nextBounds, ">", enabled, isNextHovered, panelColor, borderColor, selectedColor, selectedBorderColor, effectiveTextColor);
+        DrawCyclerButton(nextBounds, ">", enabled, isNextHovered, effectiveTextColor);
 
         return currentValue;
     }
@@ -1149,18 +1022,14 @@ internal static class SynthRenderer
         string label,
         bool enabled,
         bool isHovered,
-        Color panelColor,
-        Color borderColor,
-        Color selectedColor,
-        Color selectedBorderColor,
         Color textColor)
     {
         Color fill = enabled
-            ? (isHovered ? selectedColor : panelColor)
-            : new Color(236, 239, 245, 255);
+            ? (isHovered ? UiTheme.AccentSoftColor : UiTheme.PanelColor)
+            : UiTheme.DisabledFillColor;
         Color outline = enabled
-            ? (isHovered ? selectedBorderColor : borderColor)
-            : new Color(194, 201, 214, 255);
+            ? (isHovered ? UiTheme.AccentStrongColor : UiTheme.BorderColor)
+            : UiTheme.DisabledBorderColor;
 
         Graphics.DrawRectangleRec(bounds, fill);
         Graphics.DrawRectangleLinesEx(bounds, 1f, outline);
@@ -1229,7 +1098,7 @@ internal static class SynthRenderer
     {
         Rectangle previewBounds = new(bounds.X + 8f, bounds.Y + 8f, bounds.Width - 16f, bounds.Height - 16f);
         float centerY = previewBounds.Y + (previewBounds.Height / 2f);
-        Graphics.DrawLineEx(new Vector2(previewBounds.X, centerY), new Vector2(previewBounds.X + previewBounds.Width, centerY), 1f, new Color(borderColor.R, borderColor.G, borderColor.B, 90));
+        Graphics.DrawLineEx(new Vector2(previewBounds.X, centerY), new Vector2(previewBounds.X + previewBounds.Width, centerY), 1f, UiTheme.PreviewGuideColor);
 
         switch (waveform)
         {
