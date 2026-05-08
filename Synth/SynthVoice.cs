@@ -545,12 +545,22 @@ internal sealed class SynthVoice
         return parameters.Waveform switch
         {
             Waveform.Sine => MathF.Sin(phase * MathF.Tau),
-            Waveform.Square => GetPulseSample(oscillator, parameters, deltaTime),
+            Waveform.Square => GetSquareSample(phase),
+            Waveform.Pulse => GetPulseSample(oscillator, parameters, deltaTime),
             Waveform.Saw => (2f * phase) - 1f,
             Waveform.Triangle => 1f - (4f * MathF.Abs(phase - 0.5f)),
             Waveform.Noise => Random.Shared.NextSingle() * 2f - 1f,
+            Waveform.SuperSaw => GetSuperSawSample(phase),
+            Waveform.Organ => GetOrganSample(phase),
+            Waveform.Metallic => GetMetallicSample(phase),
+            Waveform.PinkNoise => GetPinkNoiseSample(),
             _ => 0f
         };
+    }
+
+    private static float GetSquareSample(float phase)
+    {
+        return phase < 0.5f ? 1f : -1f;
     }
 
     private static float GetPulseSample(OscillatorState oscillator, OscillatorParameters parameters, float deltaTime)
@@ -566,6 +576,57 @@ internal sealed class SynthVoice
         }
 
         return oscillator.Phase < pulseWidth ? 1f : -1f;
+    }
+
+    private static float GetSuperSawSample(float phase)
+    {
+        float detuneA = WrapPhase(phase + 0.0125f);
+        float detuneB = WrapPhase(phase - 0.0175f);
+        float detuneC = WrapPhase(phase + 0.031f);
+
+        float sample = GetSawSample(phase);
+        sample += GetSawSample(detuneA) * 0.8f;
+        sample += GetSawSample(detuneB) * 0.7f;
+        sample += GetSawSample(detuneC) * 0.55f;
+
+        return sample / 3.05f;
+    }
+
+    private static float GetOrganSample(float phase)
+    {
+        float fundamental = MathF.Sin(phase * MathF.Tau);
+        float second = MathF.Sin((phase * 2f) * MathF.Tau) * 0.45f;
+        float third = MathF.Sin((phase * 3f) * MathF.Tau) * 0.26f;
+        float fifth = MathF.Sin((phase * 5f) * MathF.Tau) * 0.16f;
+        return (fundamental + second + third + fifth) * 0.54f;
+    }
+
+    private static float GetMetallicSample(float phase)
+    {
+        float primary = MathF.Sin(phase * MathF.Tau);
+        float partialA = MathF.Sin((phase * 1.4142f) * MathF.Tau) * 0.55f;
+        float partialB = MathF.Sin((phase * 2.618f) * MathF.Tau) * 0.30f;
+        float ring = MathF.Sin((phase * 4.11f) * MathF.Tau) * 0.18f;
+        return Math.Clamp((primary + partialA + partialB + ring) * 0.62f, -1f, 1f);
+    }
+
+    private static float GetPinkNoiseSample()
+    {
+        float whiteA = Random.Shared.NextSingle() * 2f - 1f;
+        float whiteB = Random.Shared.NextSingle() * 2f - 1f;
+        float whiteC = Random.Shared.NextSingle() * 2f - 1f;
+        return Math.Clamp((whiteA * 0.55f) + (whiteB * 0.30f) + (whiteC * 0.15f), -1f, 1f);
+    }
+
+    private static float GetSawSample(float phase)
+    {
+        return (2f * phase) - 1f;
+    }
+
+    private static float WrapPhase(float phase)
+    {
+        phase -= MathF.Floor(phase);
+        return phase;
     }
 
     private void AdvancePhase(OscillatorState oscillator, float frequency)

@@ -278,7 +278,7 @@ internal sealed class TinySynthController
 
             activeOscillator.Waveform = SynthRenderer.DrawWaveformButtons(layout.WaveformButtonsArea, activeOscillator.Waveform, activeOscillator.Enabled, mousePosition, mousePressed, _panelColor, _borderColor, _accentSoftColor, _accentStrongColor, _textColor);
             activeOscillator.EnvelopeMode = SynthRenderer.DrawEnvelopeModeButtons(
-                new Rectangle(layout.WaveformButtonsArea.X + layout.WaveformButtonsArea.Width + 18, layout.WaveformButtonsArea.Y, 250, layout.WaveformButtonsArea.Height),
+                new Rectangle(layout.WaveformButtonsArea.X + layout.WaveformButtonsArea.Width + 18, layout.WaveformButtonsArea.Y, 250, 36),
                 activeOscillator.EnvelopeMode,
                 activeOscillator.Enabled,
                 mousePosition,

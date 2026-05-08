@@ -4,7 +4,12 @@ internal enum Waveform
 {
     Sine,
     Square,
+    Pulse,
     Saw,
     Triangle,
-    Noise
+    Noise,
+    SuperSaw,
+    Organ,
+    Metallic,
+    PinkNoise
 }

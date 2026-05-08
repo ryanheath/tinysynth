@@ -64,17 +64,38 @@ internal static class SynthRenderer
         Color selectedBorderColor,
         Color textColor)
     {
-        Waveform[] waveforms = [Waveform.Sine, Waveform.Square, Waveform.Saw, Waveform.Triangle, Waveform.Noise];
+        Waveform[] waveforms = [
+            Waveform.Sine,
+            Waveform.Square,
+            Waveform.Pulse,
+            Waveform.Saw,
+            Waveform.Triangle,
+            Waveform.Noise,
+            Waveform.SuperSaw,
+            Waveform.Organ,
+            Waveform.Metallic,
+            Waveform.PinkNoise
+        ];
         float buttonGap = 10f;
-        float buttonWidth = (area.Width - (buttonGap * (waveforms.Length - 1))) / waveforms.Length;
+        const int columnCount = 5;
+        int rowCount = (int)MathF.Ceiling(waveforms.Length / (float)columnCount);
+        float buttonWidth = (area.Width - (buttonGap * (columnCount - 1))) / columnCount;
+        float buttonHeight = (area.Height - (buttonGap * (rowCount - 1))) / rowCount;
 
         for (int i = 0; i < waveforms.Length; i++)
         {
-            Rectangle buttonBounds = new(area.X + (i * (buttonWidth + buttonGap)), area.Y, buttonWidth, area.Height);
+            int column = i % columnCount;
+            int row = i / columnCount;
+            Rectangle buttonBounds = new(area.X + (column * (buttonWidth + buttonGap)), area.Y + (row * (buttonHeight + buttonGap)), buttonWidth, buttonHeight);
             bool isSelected = currentValue == waveforms[i];
             bool isHovered = Contains(buttonBounds, mousePosition);
-            string buttonLabel = waveforms[i].ToString();
-            const int buttonFontSize = 18;
+            string buttonLabel = waveforms[i] switch
+            {
+                Waveform.SuperSaw => "SuperSaw",
+                Waveform.PinkNoise => "Pink Noise",
+                _ => waveforms[i].ToString()
+            };
+            const int buttonFontSize = 16;
             Color fill = enabled
                 ? (isSelected ? selectedColor : (isHovered ? new Color(245, 248, 255, 255) : panelColor))
                 : new Color(236, 239, 245, 255);
@@ -85,10 +106,7 @@ internal static class SynthRenderer
 
             Graphics.DrawRectangleRec(buttonBounds, fill);
             Graphics.DrawRectangleLinesEx(buttonBounds, isSelected ? 2.5f : 1f, outline);
-            int textWidth = TextManager.MeasureText(buttonLabel, buttonFontSize);
-            int textX = (int)(buttonBounds.X + ((buttonBounds.Width - textWidth) / 2f));
-            int textY = (int)(buttonBounds.Y + ((buttonBounds.Height - buttonFontSize) / 2f) - 1f);
-            Graphics.DrawText(buttonLabel, textX, textY, buttonFontSize, buttonTextColor);
+            DrawCenteredWrappedLabel(buttonBounds, buttonLabel, buttonFontSize, buttonTextColor);
 
             if (enabled && mousePressed && isHovered)
             {

@@ -26,9 +26,9 @@ internal static class LayoutCalculator
         Rectangle waveformPanel = new(panelMargin, controlPanel.Y + controlPanel.Height + panelGap, screenWidth - (panelMargin * 2), adaptiveWaveformHeight);
         Rectangle keyboardPanel = new(panelMargin, waveformPanel.Y + waveformPanel.Height + panelGap, screenWidth - (panelMargin * 2), adaptiveKeyboardHeight);
 
-        float sliderRowOneY = controlPanel.Y + 236;
-        float sliderRowTwoY = controlPanel.Y + 292;
-        float sliderRowThreeY = controlPanel.Y + 348;
+        float sliderRowOneY = controlPanel.Y + 256;
+        float sliderRowTwoY = controlPanel.Y + 312;
+        float sliderRowThreeY = controlPanel.Y + 368;
         float sliderWidth = (controlPanel.Width - 40 - (18 * 4)) / 5f;
         float filterSliderY = controlPanel.Y + 236;
         float filterSliderRowTwoY = controlPanel.Y + 292;
@@ -48,7 +48,7 @@ internal static class LayoutCalculator
         Rectangle presetFamilyArea = new(controlPanel.X + 20, controlPanel.Y + 144, presetFamilyWidth, 212f);
         Rectangle presetOptionArea = new(controlPanel.X + 20 + presetFamilyWidth + presetGap, controlPanel.Y + 144, presetOptionWidth, 212f);
         Rectangle oscillatorButtonsArea = new(controlPanel.X + 20, controlPanel.Y + 118, 360, 36);
-        Rectangle waveformButtonsArea = new(controlPanel.X + 20, controlPanel.Y + 184, 500, 36);
+        Rectangle waveformButtonsArea = new(controlPanel.X + 20, controlPanel.Y + 184, 500, 56);
         Rectangle filterButtonsArea = new(controlPanel.X + 20, controlPanel.Y + 170, 420, 36);
         Rectangle fxChorusButtonsArea = new(controlPanel.X + 20, controlPanel.Y + 160, fxColumnWidth, 36);
         Rectangle fxReverbButtonsArea = new(controlPanel.X + 20 + fxColumnWidth + fxColumnGap, controlPanel.Y + 160, fxColumnWidth, 36);
