@@ -2,6 +2,7 @@
 using Raylib_CSharp.Windowing;
 using System.Runtime.InteropServices;
 using TinySynth.App;
+using TinySynth.App.Input;
 using static Raylib_CSharp.Time;
 
 const int screenWidth = 1440;
@@ -29,6 +30,12 @@ AudioStream.SetBufferSizeDefault(audioBufferFrameCount);
 AudioStream audioStream = AudioStream.Load(sampleRate, 32, audioChannelCount);
 audioStream.Play();
 audioBufferPointer = Marshal.AllocHGlobal(audioBuffer.Length * sizeof(float));
+IReadOnlyList<IInputDevice> inputDevices =
+[
+    new ComputerKeyboardInputDevice(),
+    new OnScreenKeyboardInputDevice()
+];
+
 TinySynthController app = new(
     audioStream,
     audioBufferPointer,
@@ -40,7 +47,8 @@ TinySynthController app = new(
     panelGap,
     panelMargin,
     controlPanelHeight,
-    keyboardPanelHeight);
+    keyboardPanelHeight,
+    inputDevices);
 
 try
 {
