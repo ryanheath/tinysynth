@@ -1,3 +1,6 @@
+using TinySynth.Synth.Modulation;
+using TinySynth.Synth.Snapshots;
+
 namespace TinySynth.Synth;
 
 internal sealed class SynthVoice
@@ -124,15 +127,20 @@ internal sealed class SynthVoice
 
     public void AddToBuffer(float[] audioBuffer, SynthParameters parameters)
     {
+        AddToBuffer(audioBuffer, SynthPatchSnapshot.Create(parameters));
+    }
+
+    public void AddToBuffer(float[] audioBuffer, SynthPatchSnapshot patchSnapshot)
+    {
         for (int i = 0; i < audioBuffer.Length; i += StereoChannelCount)
         {
-            (float left, float right) = NextSample(parameters);
+            (float left, float right) = NextSample(patchSnapshot);
             audioBuffer[i] += left;
             audioBuffer[i + 1] += right;
         }
     }
 
-    private (float Left, float Right) NextSample(SynthParameters parameters)
+    private (float Left, float Right) NextSample(SynthPatchSnapshot patchSnapshot)
     {
         if (EnvelopeStage == EnvelopeStage.Idle || ActiveMidiNote < 0)
         {
@@ -146,7 +154,7 @@ internal sealed class SynthVoice
 
         for (int i = 0; i < _activeOscillatorCount; i++)
         {
-            OscillatorParameters oscillatorParameters = parameters.GetOscillator(i);
+            OscillatorSnapshot oscillatorParameters = patchSnapshot.GetOscillator(i);
             if (!oscillatorParameters.Enabled)
             {
                 continue;
@@ -160,18 +168,22 @@ internal sealed class SynthVoice
             UpdateFrequency(deltaTime, oscillator, oscillatorParameters);
         }
 
-        float envelopeLevel = GetAverageEnvelopeLevel(parameters);
+        float envelopeLevel = GetAverageEnvelopeLevel(patchSnapshot);
         _currentAverageEnvelopeLevel = envelopeLevel;
         float keyTrackValue = GetKeyTrackValue();
-        float lfo1Rate = GetModulatedLfoRate(parameters, parameters.Lfo1.RateHz, ModulationDestination.Lfo1Rate, envelopeLevel, 0f, 0f, keyTrackValue, oscillatorIndex: -1);
-        float lfo2Rate = GetModulatedLfoRate(parameters, parameters.Lfo2.RateHz, ModulationDestination.Lfo2Rate, envelopeLevel, 0f, 0f, keyTrackValue, oscillatorIndex: -1);
-        float lfo1Value = GetModulationLfoValue(parameters.Lfo1, deltaTime, ref _modulationLfoPhase1, lfo1Rate);
-        float lfo2Value = GetModulationLfoValue(parameters.Lfo2, deltaTime, ref _modulationLfoPhase2, lfo2Rate);
-        float filterCutoffHz = GetModulatedFilterCutoffHz(parameters, envelopeLevel, lfo1Value, lfo2Value, keyTrackValue);
+        ModulationSourceValues rateSourceValues = new(0f, 0f, envelopeLevel, keyTrackValue);
+        VoiceModulationState lfoRateModulationState = patchSnapshot.ModulationMatrix.EvaluateVoice(rateSourceValues, oscillatorIndex: -1);
+        float lfo1Rate = GetModulatedLfoRate(patchSnapshot.Lfo1.RateHz, lfoRateModulationState.Lfo1Rate);
+        float lfo2Rate = GetModulatedLfoRate(patchSnapshot.Lfo2.RateHz, lfoRateModulationState.Lfo2Rate);
+        float lfo1Value = GetModulationLfoValue(patchSnapshot.Lfo1, deltaTime, ref _modulationLfoPhase1, lfo1Rate);
+        float lfo2Value = GetModulationLfoValue(patchSnapshot.Lfo2, deltaTime, ref _modulationLfoPhase2, lfo2Rate);
+        ModulationSourceValues sourceValues = new(lfo1Value, lfo2Value, envelopeLevel, keyTrackValue);
+        VoiceModulationState sharedModulationState = patchSnapshot.ModulationMatrix.EvaluateVoice(sourceValues, oscillatorIndex: -1);
+        float filterCutoffHz = GetModulatedFilterCutoffHz(patchSnapshot, sharedModulationState);
 
         for (int i = 0; i < _activeOscillatorCount; i++)
         {
-            OscillatorParameters oscillatorParameters = parameters.GetOscillator(i);
+            OscillatorSnapshot oscillatorParameters = patchSnapshot.GetOscillator(i);
             if (!oscillatorParameters.Enabled)
             {
                 continue;
@@ -184,13 +196,14 @@ internal sealed class SynthVoice
                 continue;
             }
 
+            VoiceModulationState oscillatorModulationState = patchSnapshot.ModulationMatrix.EvaluateVoice(sourceValues, i);
             float effectiveFrequency = ApplyVibrato(oscillator.CurrentFrequency, deltaTime, oscillator, oscillatorParameters);
-            effectiveFrequency = ApplyMatrixPitchModulation(effectiveFrequency, parameters, envelopeLevel, lfo1Value, lfo2Value, keyTrackValue, i);
-            float pulseWidthModulation = GetModulationAmount(parameters, ModulationDestination.PulseWidth, envelopeLevel, lfo1Value, lfo2Value, keyTrackValue, i);
+            effectiveFrequency = ApplyPitchModulation(effectiveFrequency, oscillatorModulationState.Pitch);
+            float pulseWidthModulation = oscillatorModulationState.PulseWidth;
             float oscillatorSample = GetWaveSample(oscillator, oscillatorParameters, deltaTime, pulseWidthModulation);
-            float gain = Math.Clamp(oscillatorParameters.Gain + GetModulationAmount(parameters, ModulationDestination.Gain, envelopeLevel, lfo1Value, lfo2Value, keyTrackValue, i), 0f, 1.25f);
+            float gain = Math.Clamp(oscillatorParameters.Gain + oscillatorModulationState.Gain, 0f, 1.25f);
             float oscillatorLevel = oscillatorSample * gain * oscillator.EnvelopeLevel;
-            float pan = Math.Clamp(oscillatorParameters.Pan + GetModulationAmount(parameters, ModulationDestination.Pan, envelopeLevel, lfo1Value, lfo2Value, keyTrackValue, i), -1f, 1f);
+            float pan = Math.Clamp(oscillatorParameters.Pan + oscillatorModulationState.Pan, -1f, 1f);
             (float leftGain, float rightGain) = GetPanGains(pan);
 
             leftSample += oscillatorLevel * leftGain;
@@ -198,7 +211,7 @@ internal sealed class SynthVoice
             AdvancePhase(oscillator, effectiveFrequency);
         }
 
-        RefreshEnvelopeStage(parameters);
+        RefreshEnvelopeStage(patchSnapshot);
 
         if (EnvelopeStage == EnvelopeStage.Idle || enabledOscillatorCount == 0)
         {
@@ -207,21 +220,20 @@ internal sealed class SynthVoice
         }
 
         float normalization = 1f / MathF.Sqrt(enabledOscillatorCount);
-        leftSample = ProcessFilter(leftSample * normalization, parameters, filterCutoffHz, channelIndex: 0);
-        rightSample = ProcessFilter(rightSample * normalization, parameters, filterCutoffHz, channelIndex: 1);
+        leftSample = ProcessFilter(leftSample * normalization, patchSnapshot, sharedModulationState, filterCutoffHz, channelIndex: 0);
+        rightSample = ProcessFilter(rightSample * normalization, patchSnapshot, sharedModulationState, filterCutoffHz, channelIndex: 1);
 
         return (leftSample * _masterGain, rightSample * _masterGain);
     }
 
-    private float ProcessFilter(float inputSample, SynthParameters parameters, float cutoffHz, int channelIndex)
+    private float ProcessFilter(float inputSample, SynthPatchSnapshot patchSnapshot, VoiceModulationState modulationState, float cutoffHz, int channelIndex)
     {
-        if (parameters.FilterType == FilterType.Off)
+        if (patchSnapshot.FilterType == FilterType.Off)
         {
             return inputSample;
         }
 
-        float keyTrackValue = GetKeyTrackValue();
-        float resonance = Math.Clamp(parameters.FilterResonance + GetModulationAmount(parameters, ModulationDestination.FilterResonance, _currentAverageEnvelopeLevel, 0f, 0f, keyTrackValue, oscillatorIndex: -1), 0f, 1f);
+        float resonance = Math.Clamp(patchSnapshot.FilterResonance + modulationState.FilterResonance, 0f, 1f);
         float q = 0.707f + ((8f - 0.707f) * resonance * resonance);
         float omega = MathF.Tau * cutoffHz / _sampleRate;
         float sinOmega = MathF.Sin(omega);
@@ -235,7 +247,7 @@ internal sealed class SynthVoice
         float a1 = -2f * cosOmega;
         float a2 = 1f - alpha;
 
-        switch (parameters.FilterType)
+        switch (patchSnapshot.FilterType)
         {
             case FilterType.LowPass:
                 b0 = (1f - cosOmega) * 0.5f;
@@ -279,10 +291,10 @@ internal sealed class SynthVoice
         return outputSample;
     }
 
-    private float GetModulatedFilterCutoffHz(SynthParameters parameters, float envelopeLevel, float lfo1Value, float lfo2Value, float keyTrackValue)
+    private float GetModulatedFilterCutoffHz(SynthPatchSnapshot patchSnapshot, VoiceModulationState modulationState)
     {
-        float baseCutoffHz = Math.Clamp(parameters.FilterCutoffHz, 20f, _sampleRate * 0.45f);
-        float matrixOctaves = GetModulationAmount(parameters, ModulationDestination.FilterCutoff, envelopeLevel, lfo1Value, lfo2Value, keyTrackValue, oscillatorIndex: -1);
+        float baseCutoffHz = Math.Clamp(patchSnapshot.FilterCutoffHz, 20f, _sampleRate * 0.45f);
+        float matrixOctaves = modulationState.FilterCutoff;
         float modulatedCutoffHz = baseCutoffHz * MathF.Pow(2f, matrixOctaves);
 
         return Math.Clamp(modulatedCutoffHz, 20f, _sampleRate * 0.45f);
@@ -298,14 +310,14 @@ internal sealed class SynthVoice
         return Math.Clamp((ActiveMidiNote - 60f) / 24f, -1f, 1f);
     }
 
-    private float GetAverageEnvelopeLevel(SynthParameters parameters)
+    private float GetAverageEnvelopeLevel(SynthPatchSnapshot patchSnapshot)
     {
         float totalEnvelope = 0f;
         int enabledOscillatorCount = 0;
 
         for (int i = 0; i < _activeOscillatorCount; i++)
         {
-            if (!parameters.GetOscillator(i).Enabled)
+            if (!patchSnapshot.GetOscillator(i).Enabled)
             {
                 continue;
             }
@@ -334,7 +346,7 @@ internal sealed class SynthVoice
         return (MathF.Cos(angle), MathF.Sin(angle));
     }
 
-    private void UpdateFrequency(float deltaTime, OscillatorState oscillator, OscillatorParameters parameters)
+    private void UpdateFrequency(float deltaTime, OscillatorState oscillator, OscillatorSnapshot parameters)
     {
         if (ActiveMidiNote >= 0)
         {
@@ -351,7 +363,7 @@ internal sealed class SynthVoice
         oscillator.CurrentFrequency += (oscillator.TargetFrequency - oscillator.CurrentFrequency) * glideFactor;
     }
 
-    private void UpdateEnvelope(float deltaTime, OscillatorState oscillator, OscillatorParameters parameters)
+    private void UpdateEnvelope(float deltaTime, OscillatorState oscillator, OscillatorSnapshot parameters)
     {
         switch (EnvelopeStage)
         {
@@ -403,9 +415,9 @@ internal sealed class SynthVoice
         }
     }
 
-    private void RefreshEnvelopeStage(SynthParameters parameters)
+    private void RefreshEnvelopeStage(SynthPatchSnapshot patchSnapshot)
     {
-        if (!HasEnabledOscillator(parameters))
+        if (!HasEnabledOscillator(patchSnapshot))
         {
             ActiveMidiNote = -1;
             EnvelopeStage = EnvelopeStage.Idle;
@@ -425,7 +437,7 @@ internal sealed class SynthVoice
 
         if (EnvelopeStage == EnvelopeStage.Attack)
         {
-            if (AreAllEnabledOscillatorsAtOrAbove(parameters, 1f))
+            if (AreAllEnabledOscillatorsAtOrAbove(patchSnapshot, 1f))
             {
                 EnvelopeStage = EnvelopeStage.Decay;
             }
@@ -442,7 +454,7 @@ internal sealed class SynthVoice
 
         for (int i = 0; i < _activeOscillatorCount; i++)
         {
-            OscillatorParameters oscillatorParameters = parameters.GetOscillator(i);
+            OscillatorSnapshot oscillatorParameters = patchSnapshot.GetOscillator(i);
 
             if (!oscillatorParameters.Enabled)
             {
@@ -482,6 +494,19 @@ internal sealed class SynthVoice
         for (int i = 0; i < _activeOscillatorCount; i++)
         {
             if (_oscillators[i].EnvelopeLevel > 0f)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool HasEnabledOscillator(SynthPatchSnapshot patchSnapshot)
+    {
+        for (int i = 0; i < _activeOscillatorCount; i++)
+        {
+            if (patchSnapshot.GetOscillator(i).Enabled)
             {
                 return true;
             }
@@ -539,13 +564,13 @@ internal sealed class SynthVoice
         return true;
     }
 
-    private bool AreAllEnabledOscillatorsAtOrAbove(SynthParameters parameters, float value)
+    private bool AreAllEnabledOscillatorsAtOrAbove(SynthPatchSnapshot patchSnapshot, float value)
     {
         bool hasEnabledOscillator = false;
 
         for (int i = 0; i < _activeOscillatorCount; i++)
         {
-            if (!parameters.GetOscillator(i).Enabled)
+            if (!patchSnapshot.GetOscillator(i).Enabled)
             {
                 continue;
             }
@@ -561,7 +586,7 @@ internal sealed class SynthVoice
         return hasEnabledOscillator;
     }
 
-    private float ApplyVibrato(float baseFrequency, float deltaTime, OscillatorState oscillator, OscillatorParameters parameters)
+    private float ApplyVibrato(float baseFrequency, float deltaTime, OscillatorState oscillator, OscillatorSnapshot parameters)
     {
         if (parameters.VibratoDepthCents <= 0f || parameters.VibratoRateHz <= 0f)
         {
@@ -575,13 +600,12 @@ internal sealed class SynthVoice
         return ApplyDetune(baseFrequency, vibratoCents);
     }
 
-    private static float GetModulatedLfoRate(SynthParameters parameters, float baseRateHz, ModulationDestination destination, float envelopeLevel, float lfo1Value, float lfo2Value, float keyTrackValue, int oscillatorIndex)
+    private static float GetModulatedLfoRate(float baseRateHz, float rateModulation)
     {
-        float rateModulation = GetModulationAmount(parameters, destination, envelopeLevel, lfo1Value, lfo2Value, keyTrackValue, oscillatorIndex);
         return Math.Clamp(baseRateHz + (rateModulation * 6f), 0.01f, 20f);
     }
 
-    private static float GetModulationLfoValue(ModulationLfoParameters parameters, float deltaTime, ref float phase, float effectiveRateHz)
+    private static float GetModulationLfoValue(ModulationLfoSnapshot parameters, float deltaTime, ref float phase, float effectiveRateHz)
     {
         if (effectiveRateHz > 0f)
         {
@@ -599,42 +623,13 @@ internal sealed class SynthVoice
         } * Math.Clamp(parameters.Depth, 0f, 1f);
     }
 
-    private static float GetModulationAmount(SynthParameters parameters, ModulationDestination destination, float envelopeLevel, float lfo1Value, float lfo2Value, float keyTrackValue, int oscillatorIndex)
+    private static float ApplyPitchModulation(float baseFrequency, float pitchModulation)
     {
-        float total = 0f;
-
-        foreach (ModulationRoute route in parameters.ModulationRoutes)
-        {
-            if (route.Destination != destination
-                || route.Source == ModulationSource.None
-                || route.Destination == ModulationDestination.None
-                || (route.OscillatorIndex >= 0 && route.OscillatorIndex != oscillatorIndex))
-            {
-                continue;
-            }
-
-            float sourceValue = route.Source switch
-            {
-                ModulationSource.Lfo1 => lfo1Value,
-                ModulationSource.Lfo2 => lfo2Value,
-                ModulationSource.Envelope => envelopeLevel,
-                ModulationSource.KeyTrack => keyTrackValue,
-                _ => 0f
-            };
-
-            total += sourceValue * route.Amount;
-        }
-
-        return total;
-    }
-
-    private static float ApplyMatrixPitchModulation(float baseFrequency, SynthParameters parameters, float envelopeLevel, float lfo1Value, float lfo2Value, float keyTrackValue, int oscillatorIndex)
-    {
-        float pitchCents = GetModulationAmount(parameters, ModulationDestination.Pitch, envelopeLevel, lfo1Value, lfo2Value, keyTrackValue, oscillatorIndex) * 120f;
+        float pitchCents = pitchModulation * 120f;
         return ApplyDetune(baseFrequency, pitchCents);
     }
 
-    private static float GetWaveSample(OscillatorState oscillator, OscillatorParameters parameters, float deltaTime, float pulseWidthModulation)
+    private static float GetWaveSample(OscillatorState oscillator, OscillatorSnapshot parameters, float deltaTime, float pulseWidthModulation)
     {
         float phase = oscillator.Phase;
         return parameters.Waveform switch
@@ -658,7 +653,7 @@ internal sealed class SynthVoice
         return phase < 0.5f ? 1f : -1f;
     }
 
-    private static float GetPulseSample(OscillatorState oscillator, OscillatorParameters parameters, float deltaTime, float pulseWidthModulation)
+    private static float GetPulseSample(OscillatorState oscillator, OscillatorSnapshot parameters, float deltaTime, float pulseWidthModulation)
     {
         float pulseWidth = Math.Clamp(parameters.PulseWidth + (pulseWidthModulation * 0.45f), 0.10f, 0.90f);
 

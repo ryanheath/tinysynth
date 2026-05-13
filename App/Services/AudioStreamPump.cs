@@ -11,6 +11,7 @@ internal sealed class AudioStreamPump
     private readonly float[] _audioBuffer;
     private readonly float[] _scopeBuffer;
 
+    private int _blockId;
     private int _scopeWriteIndex;
 
     public AudioStreamPump(
@@ -33,7 +34,7 @@ internal sealed class AudioStreamPump
     {
         while (_audioStream.IsProcessed())
         {
-            synthEngine.FillBuffer(_audioBuffer, _scopeBuffer, ref _scopeWriteIndex, parameters);
+            synthEngine.RenderBlock(_audioBuffer, _scopeBuffer, ref _scopeWriteIndex, _blockId++, parameters);
             Marshal.Copy(_audioBuffer, 0, _audioBufferPointer, _audioBuffer.Length);
             _audioStream.Update(_audioBufferPointer, _audioBuffer.Length / 2);
         }
