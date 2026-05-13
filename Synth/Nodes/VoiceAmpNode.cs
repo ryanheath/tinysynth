@@ -2,15 +2,9 @@ using TinySynth.Synth.AudioGraph;
 
 namespace TinySynth.Synth.Nodes;
 
-internal sealed class VoiceAmpNode : AudioNode
+internal sealed class VoiceAmpNode(string name, SynthVoice voice, AudioNode inputNode) : AudioNode(name, inputNode)
 {
-    private readonly SynthVoice _voice;
-
-    public VoiceAmpNode(string name, SynthVoice voice, AudioNode inputNode)
-        : base(name, inputNode)
-    {
-        _voice = voice;
-    }
+    private readonly SynthVoice _voice = voice;
 
     protected override void Process(in AudioRenderContext context, IReadOnlyList<AudioNode> inputs, AudioBuffer output)
     {

@@ -1,15 +1,9 @@
 namespace TinySynth.Synth.AudioGraph;
 
-internal sealed class AudioGraphScheduler
+internal sealed class AudioGraphScheduler(AudioGraph graph)
 {
-    private readonly AudioGraph _graph;
-    private readonly IReadOnlyList<AudioNode> _orderedNodes;
-
-    public AudioGraphScheduler(AudioGraph graph)
-    {
-        _graph = graph;
-        _orderedNodes = BuildTopologicalOrder(graph.OutputNode);
-    }
+    private readonly AudioGraph _graph = graph;
+    private readonly IReadOnlyList<AudioNode> _orderedNodes = BuildTopologicalOrder(graph.OutputNode);
 
     public IReadOnlyList<AudioNode> OrderedNodes => _orderedNodes;
 

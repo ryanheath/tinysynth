@@ -2,15 +2,9 @@ using TinySynth.Synth.AudioGraph;
 
 namespace TinySynth.Synth.Nodes;
 
-internal sealed class OutputNode : AudioNode
+internal sealed class OutputNode(string name, float outputGain, AudioNode inputNode) : AudioNode(name, inputNode)
 {
-    private readonly float _outputGain;
-
-    public OutputNode(string name, float outputGain, AudioNode inputNode)
-        : base(name, inputNode)
-    {
-        _outputGain = outputGain;
-    }
+    private readonly float _outputGain = outputGain;
 
     protected override void Process(in AudioRenderContext context, IReadOnlyList<AudioNode> inputs, AudioBuffer output)
     {

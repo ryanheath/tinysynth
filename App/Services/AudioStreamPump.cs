@@ -4,27 +4,19 @@ using TinySynth.Synth;
 
 namespace TinySynth.App.Services;
 
-internal sealed class AudioStreamPump
+internal sealed class AudioStreamPump(
+    AudioStream audioStream,
+    IntPtr audioBufferPointer,
+    float[] audioBuffer,
+    int scopeBufferLength = 2048)
 {
-    private readonly AudioStream _audioStream;
-    private readonly IntPtr _audioBufferPointer;
-    private readonly float[] _audioBuffer;
-    private readonly float[] _scopeBuffer;
+    private readonly AudioStream _audioStream = audioStream;
+    private readonly IntPtr _audioBufferPointer = audioBufferPointer;
+    private readonly float[] _audioBuffer = audioBuffer;
+    private readonly float[] _scopeBuffer = new float[scopeBufferLength];
 
     private int _blockId;
     private int _scopeWriteIndex;
-
-    public AudioStreamPump(
-        AudioStream audioStream,
-        IntPtr audioBufferPointer,
-        float[] audioBuffer,
-        int scopeBufferLength = 2048)
-    {
-        _audioStream = audioStream;
-        _audioBufferPointer = audioBufferPointer;
-        _audioBuffer = audioBuffer;
-        _scopeBuffer = new float[scopeBufferLength];
-    }
 
     public float[] ScopeBuffer => _scopeBuffer;
 

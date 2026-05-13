@@ -324,14 +324,9 @@ internal sealed class SynthEngine
     }
 
 
-    private sealed class VoiceSlot
+    private sealed class VoiceSlot(SynthVoice voice)
     {
-        public VoiceSlot(SynthVoice voice)
-        {
-            Voice = voice;
-        }
-
-        public SynthVoice Voice { get; }
+        public SynthVoice Voice { get; } = voice;
 
         public bool IsHeld { get; set; }
 

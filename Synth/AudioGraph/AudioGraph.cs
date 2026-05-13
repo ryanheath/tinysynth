@@ -1,11 +1,6 @@
 namespace TinySynth.Synth.AudioGraph;
 
-internal sealed class AudioGraph
+internal sealed class AudioGraph(AudioNode outputNode)
 {
-    public AudioGraph(AudioNode outputNode)
-    {
-        OutputNode = outputNode;
-    }
-
-    public AudioNode OutputNode { get; }
+    public AudioNode OutputNode { get; } = outputNode;
 }

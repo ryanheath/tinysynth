@@ -2,17 +2,11 @@ using TinySynth.Synth.AudioGraph;
 
 namespace TinySynth.Synth.Nodes;
 
-internal sealed class VoiceFilterNode : AudioNode
+internal sealed class VoiceFilterNode(string name, SynthVoice voice, AudioNode inputNode) : AudioNode(name, inputNode)
 {
     private const int StereoChannelCount = 2;
 
-    private readonly SynthVoice _voice;
-
-    public VoiceFilterNode(string name, SynthVoice voice, AudioNode inputNode)
-        : base(name, inputNode)
-    {
-        _voice = voice;
-    }
+    private readonly SynthVoice _voice = voice;
 
     protected override void Process(in AudioRenderContext context, IReadOnlyList<AudioNode> inputs, AudioBuffer output)
     {

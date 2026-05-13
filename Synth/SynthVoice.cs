@@ -355,17 +355,11 @@ internal sealed class SynthVoice
         return frequency * MathF.Pow(2f, cents / 1200f);
     }
 
-    internal sealed class OscillatorState
+    internal sealed class OscillatorState(float defaultFrequency)
     {
-        public OscillatorState(float defaultFrequency)
-        {
-            CurrentFrequency = defaultFrequency;
-            TargetFrequency = defaultFrequency;
-        }
+        public float CurrentFrequency { get; set; } = defaultFrequency;
 
-        public float CurrentFrequency { get; set; }
-
-        public float TargetFrequency { get; set; }
+        public float TargetFrequency { get; set; } = defaultFrequency;
 
         public float Phase { get; set; }
 

@@ -4,17 +4,11 @@ using TinySynth.Synth.Snapshots;
 
 namespace TinySynth.Synth.Nodes;
 
-internal sealed class VoiceOscNode : AudioNode
+internal sealed class VoiceOscNode(string name, SynthVoice voice) : AudioNode(name)
 {
     private const int StereoChannelCount = 2;
 
-    private readonly SynthVoice _voice;
-
-    public VoiceOscNode(string name, SynthVoice voice)
-        : base(name)
-    {
-        _voice = voice;
-    }
+    private readonly SynthVoice _voice = voice;
 
     protected override void Process(in AudioRenderContext context, IReadOnlyList<AudioNode> inputs, AudioBuffer output)
     {

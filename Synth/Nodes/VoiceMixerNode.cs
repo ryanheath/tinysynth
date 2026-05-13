@@ -2,15 +2,9 @@ using TinySynth.Synth.AudioGraph;
 
 namespace TinySynth.Synth.Nodes;
 
-internal sealed class VoiceMixerNode : AudioNode
+internal sealed class VoiceMixerNode(string name, bool normalizeByVoiceCount, params AudioNode[] inputs) : AudioNode(name, inputs)
 {
-    private readonly bool _normalizeByVoiceCount;
-
-    public VoiceMixerNode(string name, bool normalizeByVoiceCount, params AudioNode[] inputs)
-        : base(name, inputs)
-    {
-        _normalizeByVoiceCount = normalizeByVoiceCount;
-    }
+    private readonly bool _normalizeByVoiceCount = normalizeByVoiceCount;
 
     protected override void Process(in AudioRenderContext context, IReadOnlyList<AudioNode> inputs, AudioBuffer output)
     {

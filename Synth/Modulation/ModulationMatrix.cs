@@ -1,19 +1,14 @@
 namespace TinySynth.Synth.Modulation;
 
-internal sealed class ModulationMatrix
+internal sealed class ModulationMatrix(IEnumerable<ModulationRoute> routes)
 {
-    private readonly RouteEntry[] _routes;
-
-    public ModulationMatrix(IEnumerable<ModulationRoute> routes)
-    {
-        _routes = routes
+    private readonly RouteEntry[] _routes = routes
             .Select(route => new RouteEntry(
                 route.Source,
                 route.Destination,
                 route.Amount,
                 route.OscillatorIndex))
             .ToArray();
-    }
 
     public IReadOnlyList<RouteEntry> Routes => _routes;
 

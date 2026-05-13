@@ -4,21 +4,15 @@ using TinySynth.Synth.Snapshots;
 
 namespace TinySynth.Synth.Nodes;
 
-internal sealed class ReverbNode : AudioNode
+internal sealed class ReverbNode(string name, int sampleRate, AudioNode inputNode) : AudioNode(name, inputNode)
 {
-    private readonly ReverbDelayLine[] _reverbLines;
-
-    public ReverbNode(string name, int sampleRate, AudioNode inputNode)
-        : base(name, inputNode)
-    {
-        _reverbLines =
+    private readonly ReverbDelayLine[] _reverbLines =
         [
             new ReverbDelayLine(sampleRate, 0.097f),
             new ReverbDelayLine(sampleRate, 0.131f),
             new ReverbDelayLine(sampleRate, 0.173f),
             new ReverbDelayLine(sampleRate, 0.211f)
         ];
-    }
 
     protected override void Process(in AudioRenderContext context, IReadOnlyList<AudioNode> inputs, AudioBuffer output)
     {
