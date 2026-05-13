@@ -27,7 +27,7 @@ internal sealed class VoicePool
         }
     }
 
-    public VoiceSlot StartNote(int midiNote, SynthParameters parameters)
+    public void StartNote(int midiNote, SynthParameters parameters)
     {
         VoiceSlot slot = FindSlotForNoteOn(midiNote);
         bool forceRestart = slot.Voice.ActiveMidiNote >= 0 && slot.Voice.ActiveMidiNote != midiNote;
@@ -35,7 +35,6 @@ internal sealed class VoicePool
         slot.IsHeld = true;
         slot.LastStartOrder = ++_voiceStartCounter;
         slot.Voice.StartNote(midiNote, parameters, forceRestart);
-        return slot;
     }
 
     public void ReleaseNote(int midiNote, bool holdPedalEnabled)
@@ -52,6 +51,17 @@ internal sealed class VoicePool
             if (!holdPedalEnabled)
             {
                 slot.Voice.ReleaseNote();
+            }
+        }
+    }
+
+    public void ClearHeldStateForIdleVoices()
+    {
+        foreach (VoiceSlot slot in _voiceSlots)
+        {
+            if (slot.Voice.IsIdle || slot.Voice.ActiveMidiNote < 0)
+            {
+                slot.IsHeld = false;
             }
         }
     }

@@ -5,8 +5,6 @@ internal readonly record struct GlobalModulationState(
     float DelayMix,
     float ReverbMix)
 {
-    public static GlobalModulationState Empty { get; } = new();
-
     public float GetValue(ModulationDestination destination)
     {
         return destination switch

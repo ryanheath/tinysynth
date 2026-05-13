@@ -1,33 +1,24 @@
-using TinySynth.Synth.Nodes;
+using TinySynth.Synth.Modulation;
 
 namespace TinySynth.Synth;
 
 internal static class VoiceStateAggregator
 {
-    public static VoiceStateSnapshot Capture(IReadOnlyList<VoiceSlot> slots, IReadOnlyDictionary<SynthVoice, VoiceOscNode> oscNodes)
+    public static VoiceActivitySnapshot CaptureActivity(IReadOnlyList<VoiceSlot> slots)
     {
         HashSet<int> activeNotes = [];
         int activeVoiceCount = 0;
-        float averageEnvelopeLevel = 0f;
-        int keyTrackMidiNote = -1;
         VoiceSlot? displaySlot = null;
 
         foreach (VoiceSlot slot in slots)
         {
             if (slot.Voice.IsIdle || slot.Voice.ActiveMidiNote < 0)
             {
-                slot.IsHeld = false;
                 continue;
             }
 
             activeNotes.Add(slot.Voice.ActiveMidiNote);
             activeVoiceCount++;
-            keyTrackMidiNote = Math.Max(keyTrackMidiNote, slot.Voice.ActiveMidiNote);
-
-            if (oscNodes.TryGetValue(slot.Voice, out VoiceOscNode? oscNode))
-            {
-                averageEnvelopeLevel += oscNode.AverageEnvelopeLevel;
-            }
 
             if (displaySlot is null || slot.LastStartOrder > displaySlot.LastStartOrder)
             {
@@ -35,11 +26,32 @@ internal static class VoiceStateAggregator
             }
         }
 
+        return new VoiceActivitySnapshot(activeNotes, activeVoiceCount, displaySlot);
+    }
+
+    public static GlobalModulationInputs CaptureGlobalModulationInputs(IReadOnlyList<VoiceSlot> slots)
+    {
+        float averageEnvelopeLevel = 0f;
+        int keyTrackMidiNote = -1;
+        int activeVoiceCount = 0;
+
+        foreach (VoiceSlot slot in slots)
+        {
+            if (slot.Voice.IsIdle || slot.Voice.ActiveMidiNote < 0)
+            {
+                continue;
+            }
+
+            activeVoiceCount++;
+            keyTrackMidiNote = Math.Max(keyTrackMidiNote, slot.Voice.ActiveMidiNote);
+            averageEnvelopeLevel += slot.Runtime.ModulationRuntime.AverageEnvelopeLevel;
+        }
+
         if (activeVoiceCount > 0)
         {
             averageEnvelopeLevel /= activeVoiceCount;
         }
 
-        return new VoiceStateSnapshot(activeNotes, activeVoiceCount, displaySlot, averageEnvelopeLevel, keyTrackMidiNote);
+        return new GlobalModulationInputs(averageEnvelopeLevel, keyTrackMidiNote);
     }
 }

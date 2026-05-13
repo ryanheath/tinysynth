@@ -5,31 +5,25 @@ using TinySynth.Synth.Snapshots;
 
 namespace TinySynth.Synth.Nodes;
 
-internal sealed class VoiceOscNode(string name, SynthVoice voice) : AudioNode(name)
+internal sealed class VoiceOscNode(string name, SynthVoice voice, VoiceRuntimeContext runtime) : AudioNode(name)
 {
     private const int StereoChannelCount = 2;
 
     private readonly SynthVoice _voice = voice;
-    private readonly VoiceFilterState _filterState = new();
-    private readonly VoiceModulationRuntime _modulationRuntime = new();
-
-    internal VoiceFilterState FilterState => _filterState;
-
-    internal float AverageEnvelopeLevel => _modulationRuntime.AverageEnvelopeLevel;
+    private readonly VoiceRuntimeContext _runtime = runtime;
 
     protected override void Process(in AudioRenderContext context, IReadOnlyList<AudioNode> inputs, AudioBuffer output)
     {
-        _filterState.EnsureBuffers(context.FrameCount);
+        _runtime.FilterState.EnsureBuffers(context.FrameCount);
 
         float[] outputBuffer = output.SampleArray;
-        float[] filterCutoffBuffer = _filterState.CutoffBuffer;
-        float[] filterResonanceBuffer = _filterState.ResonanceBuffer;
+        float[] filterCutoffBuffer = _runtime.FilterState.CutoffBuffer;
+        float[] filterResonanceBuffer = _runtime.FilterState.ResonanceBuffer;
 
         if (_voice.EnvelopeStage == EnvelopeStage.Idle || _voice.ActiveMidiNote < 0)
         {
-            _modulationRuntime.Reset();
-            _filterState.Reset();
-            _modulationRuntime.AverageEnvelopeLevel = 0f;
+            _runtime.ModulationRuntime.Reset();
+            _runtime.FilterState.Reset();
             Array.Clear(filterCutoffBuffer, 0, context.FrameCount);
             Array.Clear(filterResonanceBuffer, 0, context.FrameCount);
             return;
@@ -43,7 +37,7 @@ internal sealed class VoiceOscNode(string name, SynthVoice voice) : AudioNode(na
         {
             if (_voice.EnvelopeStage == EnvelopeStage.Idle || _voice.ActiveMidiNote < 0 || enabledOscillatorCount == 0)
             {
-                _modulationRuntime.AverageEnvelopeLevel = 0f;
+                _runtime.ModulationRuntime.AverageEnvelopeLevel = 0f;
                 filterCutoffBuffer[frameIndex] = Math.Clamp(patchSnapshot.FilterCutoffHz, 20f, _voice.SampleRate * 0.45f);
                 filterResonanceBuffer[frameIndex] = Math.Clamp(patchSnapshot.FilterResonance, 0f, 1f);
                 continue;
@@ -66,18 +60,18 @@ internal sealed class VoiceOscNode(string name, SynthVoice voice) : AudioNode(na
             }
 
             float envelopeLevel = GetAverageEnvelopeLevel(_voice, patchSnapshot);
-            _modulationRuntime.AverageEnvelopeLevel = envelopeLevel;
+            _runtime.ModulationRuntime.AverageEnvelopeLevel = envelopeLevel;
             float keyTrackValue = VoiceRuntimeInspector.GetKeyTrackValue(_voice.ActiveMidiNote);
             ModulationSourceValues rateSourceValues = new(0f, 0f, envelopeLevel, keyTrackValue);
             VoiceModulationState lfoRateModulationState = patchSnapshot.ModulationMatrix.EvaluateVoice(rateSourceValues, oscillatorIndex: -1);
             float lfo1Rate = GetModulatedLfoRate(patchSnapshot.Lfo1.RateHz, lfoRateModulationState.Lfo1Rate);
             float lfo2Rate = GetModulatedLfoRate(patchSnapshot.Lfo2.RateHz, lfoRateModulationState.Lfo2Rate);
-            float modulationLfoPhase1 = _modulationRuntime.LfoPhase1;
-            float modulationLfoPhase2 = _modulationRuntime.LfoPhase2;
+            float modulationLfoPhase1 = _runtime.ModulationRuntime.LfoPhase1;
+            float modulationLfoPhase2 = _runtime.ModulationRuntime.LfoPhase2;
             float lfo1Value = GetModulationLfoValue(patchSnapshot.Lfo1, deltaTime, ref modulationLfoPhase1, lfo1Rate);
             float lfo2Value = GetModulationLfoValue(patchSnapshot.Lfo2, deltaTime, ref modulationLfoPhase2, lfo2Rate);
-            _modulationRuntime.LfoPhase1 = modulationLfoPhase1;
-            _modulationRuntime.LfoPhase2 = modulationLfoPhase2;
+            _runtime.ModulationRuntime.LfoPhase1 = modulationLfoPhase1;
+            _runtime.ModulationRuntime.LfoPhase2 = modulationLfoPhase2;
             ModulationSourceValues sourceValues = new(lfo1Value, lfo2Value, envelopeLevel, keyTrackValue);
             VoiceModulationState sharedModulationState = patchSnapshot.ModulationMatrix.EvaluateVoice(sourceValues, oscillatorIndex: -1);
             filterCutoffBuffer[frameIndex] = GetModulatedFilterCutoffHz(_voice.SampleRate, patchSnapshot, sharedModulationState);
@@ -116,7 +110,7 @@ internal sealed class VoiceOscNode(string name, SynthVoice voice) : AudioNode(na
 
             if (_voice.EnvelopeStage == EnvelopeStage.Idle)
             {
-                _modulationRuntime.AverageEnvelopeLevel = 0f;
+                _runtime.ModulationRuntime.AverageEnvelopeLevel = 0f;
             }
 
             float normalization = 1f / MathF.Sqrt(enabledOscillatorCount);

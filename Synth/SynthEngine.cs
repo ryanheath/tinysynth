@@ -15,7 +15,6 @@ internal sealed class SynthEngine
     private bool _holdPedalEnabled;
     private readonly AudioGraphScheduler _audioGraphScheduler;
     private readonly GlobalModulationRuntime _globalModulationRuntime;
-    private readonly Dictionary<SynthVoice, VoiceOscNode> _voiceOscNodes = [];
 
     public SynthEngine(int sampleRate, float masterGain, int defaultMidiNote, int voiceCount)
     {
@@ -75,12 +74,11 @@ internal sealed class SynthEngine
     public void RenderBlock(float[] audioBuffer, float[] scopeBuffer, ref int scopeWriteIndex, int blockId, SynthParameters parameters)
     {
         SynthPatchSnapshot patchSnapshot = SynthPatchSnapshot.Create(parameters);
-        VoiceStateSnapshot voiceState = VoiceStateAggregator.Capture(_voicePool.Slots, _voiceOscNodes);
+        GlobalModulationInputs modulationInputs = VoiceStateAggregator.CaptureGlobalModulationInputs(_voicePool.Slots);
         GlobalModulationState globalModulationState = _globalModulationRuntime.AdvanceAndBuild(
             patchSnapshot,
             audioBuffer.Length / StereoChannelCount,
-            voiceState.AverageEnvelopeLevel,
-            voiceState.KeyTrackMidiNote);
+            modulationInputs);
         AudioRenderContext context = new(blockId, audioBuffer.Length / StereoChannelCount, _sampleRate, patchSnapshot, globalModulationState);
         AudioBuffer output = _audioGraphScheduler.Execute(context);
         output.CopyTo(audioBuffer);
@@ -96,7 +94,8 @@ internal sealed class SynthEngine
 
     private void RefreshVoiceState()
     {
-        VoiceStateSnapshot voiceState = VoiceStateAggregator.Capture(_voicePool.Slots, _voiceOscNodes);
+        _voicePool.ClearHeldStateForIdleVoices();
+        VoiceActivitySnapshot voiceState = VoiceStateAggregator.CaptureActivity(_voicePool.Slots);
         _activeNotes.Clear();
         foreach (int midiNote in voiceState.ActiveNotes)
         {
@@ -113,10 +112,10 @@ internal sealed class SynthEngine
 
         for (int i = 0; i < _voicePool.Slots.Count; i++)
         {
-            SynthVoice voice = _voicePool.Slots[i].Voice;
-            VoiceOscNode oscNode = new($"Voice{i + 1}.Osc", voice);
-            _voiceOscNodes[voice] = oscNode;
-            VoiceFilterNode filterNode = new($"Voice{i + 1}.Filter", voice, oscNode);
+            VoiceSlot slot = _voicePool.Slots[i];
+            SynthVoice voice = slot.Voice;
+            VoiceOscNode oscNode = new($"Voice{i + 1}.Osc", voice, slot.Runtime);
+            VoiceFilterNode filterNode = new($"Voice{i + 1}.Filter", voice, slot.Runtime, oscNode);
             ampNodes[i] = new VoiceAmpNode($"Voice{i + 1}.Amp", voice, filterNode);
         }
 
