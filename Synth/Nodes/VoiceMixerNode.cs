@@ -18,6 +18,11 @@ internal sealed class VoiceMixerNode : AudioNode
 
         foreach (AudioNode input in inputs)
         {
+            if (IsSilent(input.Output))
+            {
+                continue;
+            }
+
             output.AddFrom(input.Output);
             activeInputCount++;
         }
@@ -34,5 +39,20 @@ internal sealed class VoiceMixerNode : AudioNode
         {
             samples[i] *= scale;
         }
+    }
+
+    private static bool IsSilent(AudioBuffer buffer)
+    {
+        ReadOnlySpan<float> samples = buffer.ReadOnlySamples;
+
+        for (int i = 0; i < samples.Length; i++)
+        {
+            if (MathF.Abs(samples[i]) > 0.000001f)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

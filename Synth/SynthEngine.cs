@@ -11,7 +11,6 @@ internal sealed class SynthEngine
 
     private readonly int _sampleRate;
     private readonly VoiceSlot[] _voiceSlots;
-    private readonly SynthVoice[] _voices;
     private readonly HashSet<int> _activeNotes = [];
     private bool _holdPedalEnabled;
     private long _voiceStartCounter;
@@ -27,12 +26,10 @@ internal sealed class SynthEngine
         _sampleRate = sampleRate;
         voiceCount = Math.Max(1, voiceCount);
         _voiceSlots = new VoiceSlot[voiceCount];
-        _voices = new SynthVoice[voiceCount];
 
         for (int i = 0; i < voiceCount; i++)
         {
             SynthVoice voice = new(sampleRate, masterGain, defaultMidiNote);
-            _voices[i] = voice;
             _voiceSlots[i] = new VoiceSlot(voice);
         }
 
@@ -257,7 +254,17 @@ internal sealed class SynthEngine
 
     private AudioGraphScheduler CreateAudioGraphScheduler()
     {
-        RenderSourceNode voiceBusNode = new("VoiceBus", _voices);
+        AudioNode[] ampNodes = new AudioNode[_voiceSlots.Length];
+
+        for (int i = 0; i < _voiceSlots.Length; i++)
+        {
+            SynthVoice voice = _voiceSlots[i].Voice;
+            VoiceOscNode oscNode = new($"Voice{i + 1}.Osc", voice);
+            VoiceFilterNode filterNode = new($"Voice{i + 1}.Filter", voice, oscNode);
+            ampNodes[i] = new VoiceAmpNode($"Voice{i + 1}.Amp", voice, filterNode);
+        }
+
+        VoiceMixerNode voiceBusNode = new("VoiceMixer", normalizeByVoiceCount: true, ampNodes);
         ChorusNode chorusNode = new("Chorus", _sampleRate, voiceBusNode);
         DelayNode delayNode = new("Delay", _sampleRate, voiceBusNode);
         ReverbNode reverbNode = new("Reverb", _sampleRate, voiceBusNode);
