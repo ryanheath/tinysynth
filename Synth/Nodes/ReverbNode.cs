@@ -1,4 +1,5 @@
 using TinySynth.Synth.AudioGraph;
+using TinySynth.Synth.Dsp;
 using TinySynth.Synth.Modulation;
 using TinySynth.Synth.Snapshots;
 
@@ -16,7 +17,7 @@ internal sealed class ReverbNode(string name, int sampleRate, AudioNode inputNod
 
     protected override void Process(in AudioRenderContext context, IReadOnlyList<AudioNode> inputs, AudioBuffer output)
     {
-        FxSnapshot parameters = GetEffectSnapshot(context.PatchSnapshot.Fx, context.GlobalModulationState);
+        FxSnapshot parameters = context.PatchSnapshot.Fx.WithModulation(context.GlobalModulationState);
         float[] inputSamples = inputs[0].Output.SampleArray;
         float[] outputSamples = output.SampleArray;
 
@@ -56,8 +57,8 @@ internal sealed class ReverbNode(string name, int sampleRate, AudioNode inputNod
         {
             ReverbDelayLine line = _reverbLines[i];
             float delaySamples = line.MaxDelaySamples * Math.Clamp((0.45f + (size * 0.55f)) * sizeScale, 0.20f, 1f);
-            float delayedLeft = ReadDelay(line.LeftBuffer, line.WriteIndex, delaySamples);
-            float delayedRight = ReadDelay(line.RightBuffer, line.WriteIndex, delaySamples);
+            float delayedLeft = DelayMath.ReadInterpolated(line.LeftBuffer, line.WriteIndex, delaySamples);
+            float delayedRight = DelayMath.ReadInterpolated(line.RightBuffer, line.WriteIndex, delaySamples);
             line.FilterStateLeft += (delayedLeft - line.FilterStateLeft) * toneResponse;
             line.FilterStateRight += (delayedRight - line.FilterStateRight) * toneResponse;
             float filteredLeft = line.FilterStateLeft;
@@ -77,39 +78,6 @@ internal sealed class ReverbNode(string name, int sampleRate, AudioNode inputNod
             (inputLeft * (1f - (mix * 0.55f))) + (wetLeft * mix),
             (inputRight * (1f - (mix * 0.55f))) + (wetRight * mix));
     }
-
-    private static FxSnapshot GetEffectSnapshot(FxSnapshot source, GlobalModulationState modulationState)
-    {
-        return source with
-        {
-            ChorusMix = Math.Clamp(source.ChorusMix + modulationState.ChorusMix, 0f, 1f),
-            DelayMix = Math.Clamp(source.DelayMix + modulationState.DelayMix, 0f, 1f),
-            ReverbMix = Math.Clamp(source.ReverbMix + modulationState.ReverbMix, 0f, 1f)
-        };
-    }
-
-    private static float ReadDelay(float[] buffer, int writeIndex, float delaySamples)
-    {
-        double readPosition = writeIndex - delaySamples;
-        readPosition %= buffer.Length;
-
-        if (readPosition < 0d)
-        {
-            readPosition += buffer.Length;
-        }
-
-        int sampleIndexA = (int)readPosition;
-
-        if (sampleIndexA >= buffer.Length)
-        {
-            sampleIndexA = 0;
-        }
-
-        int sampleIndexB = (sampleIndexA + 1) % buffer.Length;
-        float fraction = (float)(readPosition - sampleIndexA);
-        return buffer[sampleIndexA] + ((buffer[sampleIndexB] - buffer[sampleIndexA]) * fraction);
-    }
-
     private sealed class ReverbDelayLine
     {
         public ReverbDelayLine(int sampleRate, float maxDelaySeconds)

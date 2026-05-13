@@ -10,29 +10,18 @@ internal sealed class SynthEngine
     private const int StereoChannelCount = 2;
 
     private readonly int _sampleRate;
-    private readonly VoiceSlot[] _voiceSlots;
+    private readonly VoicePool _voicePool;
     private readonly HashSet<int> _activeNotes = [];
     private bool _holdPedalEnabled;
-    private long _voiceStartCounter;
     private readonly AudioGraphScheduler _audioGraphScheduler;
-
-    private float _lastEnvelopeLevel;
-
-    private int _lastKeyTrackMidiNote = -1;
-    private int _fallbackBlockId;
+    private readonly GlobalModulationRuntime _globalModulationRuntime;
+    private readonly Dictionary<SynthVoice, VoiceOscNode> _voiceOscNodes = [];
 
     public SynthEngine(int sampleRate, float masterGain, int defaultMidiNote, int voiceCount)
     {
         _sampleRate = sampleRate;
-        voiceCount = Math.Max(1, voiceCount);
-        _voiceSlots = new VoiceSlot[voiceCount];
-
-        for (int i = 0; i < voiceCount; i++)
-        {
-            SynthVoice voice = new(sampleRate, masterGain, defaultMidiNote);
-            _voiceSlots[i] = new VoiceSlot(voice);
-        }
-
+        _voicePool = new VoicePool(sampleRate, masterGain, defaultMidiNote, voiceCount);
+        _globalModulationRuntime = new GlobalModulationRuntime(sampleRate);
         _audioGraphScheduler = CreateAudioGraphScheduler();
         RefreshVoiceState();
     }
@@ -41,18 +30,17 @@ internal sealed class SynthEngine
 
     public int ActiveVoiceCount { get; private set; }
 
-    public int DisplayMidiNote => GetDisplaySlot()?.Voice.ActiveMidiNote ?? -1;
+    private VoiceSlot? _displaySlot;
 
-    public float DisplayFrequency => GetDisplaySlot()?.Voice.CurrentFrequency ?? 0f;
+    public int DisplayMidiNote => _displaySlot?.Voice.ActiveMidiNote ?? -1;
 
-    public EnvelopeStage DisplayEnvelopeStage => GetDisplaySlot()?.Voice.EnvelopeStage ?? EnvelopeStage.Idle;
+    public float DisplayFrequency => _displaySlot?.Voice.CurrentFrequency ?? 0f;
+
+    public EnvelopeStage DisplayEnvelopeStage => _displaySlot?.Voice.EnvelopeStage ?? EnvelopeStage.Idle;
 
     public void SetMasterGain(float masterGain)
     {
-        foreach (VoiceSlot slot in _voiceSlots)
-        {
-            slot.Voice.SetMasterGain(masterGain);
-        }
+        _voicePool.SetMasterGain(masterGain);
     }
 
     public void SetHoldPedal(bool enabled)
@@ -66,7 +54,7 @@ internal sealed class SynthEngine
 
         if (!_holdPedalEnabled)
         {
-            ReleaseUnheldVoices();
+            _voicePool.ReleaseUnheldVoices();
         }
 
         RefreshVoiceState();
@@ -74,46 +62,25 @@ internal sealed class SynthEngine
 
     public void NoteOn(int midiNote, SynthParameters parameters)
     {
-        VoiceSlot slot = FindSlotForNoteOn(midiNote);
-        bool forceRestart = slot.Voice.ActiveMidiNote >= 0 && slot.Voice.ActiveMidiNote != midiNote;
-
-        slot.IsHeld = true;
-        slot.LastStartOrder = ++_voiceStartCounter;
-        slot.Voice.StartNote(midiNote, parameters, forceRestart);
-
+        _voicePool.StartNote(midiNote, parameters);
         RefreshVoiceState();
     }
 
     public void NoteOff(int midiNote)
     {
-        foreach (VoiceSlot slot in _voiceSlots)
-        {
-            if (slot.Voice.ActiveMidiNote != midiNote || slot.Voice.IsIdle)
-            {
-                continue;
-            }
-
-            slot.IsHeld = false;
-
-            if (!_holdPedalEnabled)
-            {
-                slot.Voice.ReleaseNote();
-            }
-        }
-
+        _voicePool.ReleaseNote(midiNote, _holdPedalEnabled);
         RefreshVoiceState();
-    }
-
-    public void FillBuffer(float[] audioBuffer, float[] scopeBuffer, ref int scopeWriteIndex, SynthParameters parameters)
-    {
-        RenderBlock(audioBuffer, scopeBuffer, ref scopeWriteIndex, ++_fallbackBlockId, parameters);
     }
 
     public void RenderBlock(float[] audioBuffer, float[] scopeBuffer, ref int scopeWriteIndex, int blockId, SynthParameters parameters)
     {
         SynthPatchSnapshot patchSnapshot = SynthPatchSnapshot.Create(parameters);
-        UpdateModulationState();
-        GlobalModulationState globalModulationState = GetGlobalModulationState(patchSnapshot);
+        VoiceStateSnapshot voiceState = VoiceStateAggregator.Capture(_voicePool.Slots, _voiceOscNodes);
+        GlobalModulationState globalModulationState = _globalModulationRuntime.AdvanceAndBuild(
+            patchSnapshot,
+            audioBuffer.Length / StereoChannelCount,
+            voiceState.AverageEnvelopeLevel,
+            voiceState.KeyTrackMidiNote);
         AudioRenderContext context = new(blockId, audioBuffer.Length / StereoChannelCount, _sampleRate, patchSnapshot, globalModulationState);
         AudioBuffer output = _audioGraphScheduler.Execute(context);
         output.CopyTo(audioBuffer);
@@ -127,139 +94,28 @@ internal sealed class SynthEngine
         RefreshVoiceState();
     }
 
-    private VoiceSlot FindSlotForNoteOn(int midiNote)
-    {
-        return FindSlotPlayingNote(midiNote)
-            ?? FindIdleSlot()
-            ?? FindReleasingSlot()
-            ?? FindOldestActiveSlot();
-    }
-
-    private VoiceSlot? FindSlotPlayingNote(int midiNote)
-    {
-        VoiceSlot? best = null;
-
-        foreach (VoiceSlot slot in _voiceSlots)
-        {
-            if (slot.Voice.ActiveMidiNote != midiNote || slot.Voice.IsIdle)
-            {
-                continue;
-            }
-
-            if (best is null || slot.LastStartOrder > best.LastStartOrder)
-            {
-                best = slot;
-            }
-        }
-
-        return best;
-    }
-
-    private VoiceSlot? FindIdleSlot()
-    {
-        foreach (VoiceSlot slot in _voiceSlots)
-        {
-            if (slot.Voice.IsIdle || slot.Voice.ActiveMidiNote < 0)
-            {
-                return slot;
-            }
-        }
-
-        return null;
-    }
-
-    private VoiceSlot? FindReleasingSlot()
-    {
-        VoiceSlot? candidate = null;
-
-        foreach (VoiceSlot slot in _voiceSlots)
-        {
-            if (slot.Voice.EnvelopeStage != EnvelopeStage.Release)
-            {
-                continue;
-            }
-
-            if (candidate is null || slot.LastStartOrder < candidate.LastStartOrder)
-            {
-                candidate = slot;
-            }
-        }
-
-        return candidate;
-    }
-
-    private VoiceSlot FindOldestActiveSlot()
-    {
-        VoiceSlot oldest = _voiceSlots[0];
-
-        foreach (VoiceSlot slot in _voiceSlots)
-        {
-            if (slot.LastStartOrder < oldest.LastStartOrder)
-            {
-                oldest = slot;
-            }
-        }
-
-        return oldest;
-    }
-
-    private VoiceSlot? GetDisplaySlot()
-    {
-        VoiceSlot? displaySlot = null;
-
-        foreach (VoiceSlot slot in _voiceSlots)
-        {
-            if (slot.Voice.IsIdle || slot.Voice.ActiveMidiNote < 0)
-            {
-                continue;
-            }
-
-            if (displaySlot is null || slot.LastStartOrder > displaySlot.LastStartOrder)
-            {
-                displaySlot = slot;
-            }
-        }
-
-        return displaySlot;
-    }
-
-    private void ReleaseUnheldVoices()
-    {
-        foreach (VoiceSlot slot in _voiceSlots)
-        {
-            if (!slot.IsHeld && !slot.Voice.IsIdle)
-            {
-                slot.Voice.ReleaseNote();
-            }
-        }
-    }
-
     private void RefreshVoiceState()
     {
+        VoiceStateSnapshot voiceState = VoiceStateAggregator.Capture(_voicePool.Slots, _voiceOscNodes);
         _activeNotes.Clear();
-        ActiveVoiceCount = 0;
-
-        foreach (VoiceSlot slot in _voiceSlots)
+        foreach (int midiNote in voiceState.ActiveNotes)
         {
-            if (slot.Voice.IsIdle || slot.Voice.ActiveMidiNote < 0)
-            {
-                slot.IsHeld = false;
-                continue;
-            }
-
-            _activeNotes.Add(slot.Voice.ActiveMidiNote);
-            ActiveVoiceCount++;
+            _activeNotes.Add(midiNote);
         }
+
+        ActiveVoiceCount = voiceState.ActiveVoiceCount;
+        _displaySlot = voiceState.DisplaySlot;
     }
 
     private AudioGraphScheduler CreateAudioGraphScheduler()
     {
-        AudioNode[] ampNodes = new AudioNode[_voiceSlots.Length];
+        AudioNode[] ampNodes = new AudioNode[_voicePool.Slots.Count];
 
-        for (int i = 0; i < _voiceSlots.Length; i++)
+        for (int i = 0; i < _voicePool.Slots.Count; i++)
         {
-            SynthVoice voice = _voiceSlots[i].Voice;
+            SynthVoice voice = _voicePool.Slots[i].Voice;
             VoiceOscNode oscNode = new($"Voice{i + 1}.Osc", voice);
+            _voiceOscNodes[voice] = oscNode;
             VoiceFilterNode filterNode = new($"Voice{i + 1}.Filter", voice, oscNode);
             ampNodes[i] = new VoiceAmpNode($"Voice{i + 1}.Amp", voice, filterNode);
         }
@@ -272,65 +128,4 @@ internal sealed class SynthEngine
         OutputNode outputNode = new("Output", 1f, mainMixerNode);
         return new AudioGraphScheduler(new AudioGraph.AudioGraph(outputNode));
     }
-
-    private void UpdateModulationState()
-    {
-        _lastEnvelopeLevel = 0f;
-        _lastKeyTrackMidiNote = -1;
-        int voiceCount = 0;
-
-        foreach (VoiceSlot slot in _voiceSlots)
-        {
-            if (slot.Voice.IsIdle || slot.Voice.ActiveMidiNote < 0)
-            {
-                continue;
-            }
-
-            _lastEnvelopeLevel += slot.Voice.ModulationEnvelopeLevel;
-            _lastKeyTrackMidiNote = Math.Max(_lastKeyTrackMidiNote, slot.Voice.ActiveMidiNote);
-            voiceCount++;
-        }
-
-        if (voiceCount > 0)
-        {
-            _lastEnvelopeLevel /= voiceCount;
-        }
-    }
-
-    private GlobalModulationState GetGlobalModulationState(SynthPatchSnapshot patchSnapshot)
-    {
-        float lfo1Value = GetLfoValue(patchSnapshot.Lfo1, 0f);
-        float lfo2Value = GetLfoValue(patchSnapshot.Lfo2, 0f);
-        float keyTrackValue = _lastKeyTrackMidiNote < 0
-            ? 0f
-            : Math.Clamp((_lastKeyTrackMidiNote - 60f) / 24f, -1f, 1f);
-
-        ModulationSourceValues sourceValues = new(lfo1Value, lfo2Value, _lastEnvelopeLevel, keyTrackValue);
-        return patchSnapshot.ModulationMatrix.EvaluateGlobal(sourceValues);
-    }
-
-    private static float GetLfoValue(ModulationLfoSnapshot parameters, float phase)
-    {
-        float value = parameters.Shape switch
-        {
-            ModulationLfoShape.Sine => MathF.Sin(phase * MathF.Tau),
-            ModulationLfoShape.Triangle => 1f - (4f * MathF.Abs(phase - 0.5f)),
-            ModulationLfoShape.Saw => (2f * phase) - 1f,
-            ModulationLfoShape.Square => phase < 0.5f ? 1f : -1f,
-            _ => 0f
-        };
-
-        return value * Math.Clamp(parameters.Depth, 0f, 1f);
-    }
-
-
-    private sealed class VoiceSlot(SynthVoice voice)
-    {
-        public SynthVoice Voice { get; } = voice;
-
-        public bool IsHeld { get; set; }
-
-        public long LastStartOrder { get; set; }
-    }
-
 }

@@ -2,15 +2,15 @@ using TinySynth.Synth.AudioGraph;
 
 namespace TinySynth.Synth.Nodes;
 
-internal sealed class VoiceFilterNode(string name, SynthVoice voice, AudioNode inputNode) : AudioNode(name, inputNode)
+internal sealed class VoiceFilterNode(string name, SynthVoice voice, VoiceOscNode oscNode) : AudioNode(name, oscNode)
 {
     private const int StereoChannelCount = 2;
 
     private readonly SynthVoice _voice = voice;
+    private readonly VoiceFilterState _filterState = oscNode.FilterState;
 
     protected override void Process(in AudioRenderContext context, IReadOnlyList<AudioNode> inputs, AudioBuffer output)
     {
-        _voice.EnsureStageBuffers(context.FrameCount);
         float[] inputSamples = inputs[0].Output.SampleArray;
         float[] outputSamples = output.SampleArray;
 
@@ -20,12 +20,12 @@ internal sealed class VoiceFilterNode(string name, SynthVoice voice, AudioNode i
             return;
         }
 
-        float[] filterCutoffBuffer = _voice.FilterCutoffBuffer;
-        float[] filterResonanceBuffer = _voice.FilterResonanceBuffer;
-        float[] filterInput1 = _voice.FilterInput1;
-        float[] filterInput2 = _voice.FilterInput2;
-        float[] filterOutput1 = _voice.FilterOutput1;
-        float[] filterOutput2 = _voice.FilterOutput2;
+        float[] filterCutoffBuffer = _filterState.CutoffBuffer;
+        float[] filterResonanceBuffer = _filterState.ResonanceBuffer;
+        float[] filterInput1 = _filterState.Input1;
+        float[] filterInput2 = _filterState.Input2;
+        float[] filterOutput1 = _filterState.Output1;
+        float[] filterOutput2 = _filterState.Output2;
 
         for (int frameIndex = 0; frameIndex < context.FrameCount; frameIndex++)
         {

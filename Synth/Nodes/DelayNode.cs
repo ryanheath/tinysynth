@@ -1,4 +1,5 @@
 using TinySynth.Synth.AudioGraph;
+using TinySynth.Synth.Dsp;
 using TinySynth.Synth.Modulation;
 using TinySynth.Synth.Snapshots;
 
@@ -26,7 +27,7 @@ internal sealed class DelayNode : AudioNode
 
     protected override void Process(in AudioRenderContext context, IReadOnlyList<AudioNode> inputs, AudioBuffer output)
     {
-        FxSnapshot parameters = GetEffectSnapshot(context.PatchSnapshot.Fx, context.GlobalModulationState);
+        FxSnapshot parameters = context.PatchSnapshot.Fx.WithModulation(context.GlobalModulationState);
         float[] inputSamples = inputs[0].Output.SampleArray;
         float[] outputSamples = output.SampleArray;
 
@@ -62,12 +63,12 @@ internal sealed class DelayNode : AudioNode
 
         if (modulationDepth > 0f)
         {
-            _modulationPhase = AdvancePhase(_modulationPhase, Math.Max(parameters.ChorusRateHz, 0.05f) / _sampleRate);
+            _modulationPhase = PhaseMath.Advance(_modulationPhase, Math.Max(parameters.ChorusRateHz, 0.05f) / _sampleRate);
         }
 
         float delaySamples = Math.Clamp((delaySeconds * _sampleRate) + modulation, 1f, _buffers[0].Length - 2f);
-        float delayedLeft = ReadDelay(_buffers[0], _writeIndex, delaySamples);
-        float delayedRight = ReadDelay(_buffers[1], _writeIndex, delaySamples);
+        float delayedLeft = DelayMath.ReadInterpolated(_buffers[0], _writeIndex, delaySamples);
+        float delayedRight = DelayMath.ReadInterpolated(_buffers[1], _writeIndex, delaySamples);
 
         _filterState[0] += (delayedLeft - _filterState[0]) * toneResponse;
         _filterState[1] += (delayedRight - _filterState[1]) * toneResponse;
@@ -90,44 +91,5 @@ internal sealed class DelayNode : AudioNode
         return (
             (inputLeft * (1f - (mix * 0.45f))) + (filteredLeft * mix),
             (inputRight * (1f - (mix * 0.45f))) + (filteredRight * mix));
-    }
-
-    private static FxSnapshot GetEffectSnapshot(FxSnapshot source, GlobalModulationState modulationState)
-    {
-        return source with
-        {
-            ChorusMix = Math.Clamp(source.ChorusMix + modulationState.ChorusMix, 0f, 1f),
-            DelayMix = Math.Clamp(source.DelayMix + modulationState.DelayMix, 0f, 1f),
-            ReverbMix = Math.Clamp(source.ReverbMix + modulationState.ReverbMix, 0f, 1f)
-        };
-    }
-
-    private static float AdvancePhase(float phase, float increment)
-    {
-        phase += increment;
-        phase -= MathF.Floor(phase);
-        return phase;
-    }
-
-    private static float ReadDelay(float[] buffer, int writeIndex, float delaySamples)
-    {
-        double readPosition = writeIndex - delaySamples;
-        readPosition %= buffer.Length;
-
-        if (readPosition < 0d)
-        {
-            readPosition += buffer.Length;
-        }
-
-        int sampleIndexA = (int)readPosition;
-
-        if (sampleIndexA >= buffer.Length)
-        {
-            sampleIndexA = 0;
-        }
-
-        int sampleIndexB = (sampleIndexA + 1) % buffer.Length;
-        float fraction = (float)(readPosition - sampleIndexA);
-        return buffer[sampleIndexA] + ((buffer[sampleIndexB] - buffer[sampleIndexA]) * fraction);
     }
 }

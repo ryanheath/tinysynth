@@ -1,3 +1,5 @@
+using TinySynth.Synth.Modulation;
+
 namespace TinySynth.Synth.Snapshots;
 
 internal readonly record struct FxSnapshot(
@@ -31,5 +33,15 @@ internal readonly record struct FxSnapshot(
             source.DelayMix,
             source.DelayTimeSeconds,
             source.DelayFeedback);
+    }
+
+    public FxSnapshot WithModulation(GlobalModulationState modulationState)
+    {
+        return this with
+        {
+            ChorusMix = Math.Clamp(ChorusMix + modulationState.ChorusMix, 0f, 1f),
+            DelayMix = Math.Clamp(DelayMix + modulationState.DelayMix, 0f, 1f),
+            ReverbMix = Math.Clamp(ReverbMix + modulationState.ReverbMix, 0f, 1f)
+        };
     }
 }
