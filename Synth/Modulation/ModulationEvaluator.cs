@@ -42,6 +42,22 @@ internal static class ModulationEvaluator
             Lfo2Rate: EvaluateAmount(routes, ModulationDestination.Lfo2Rate, sourceValues, oscillatorIndex));
     }
 
+    public static VoiceModulationState EvaluateOscillator(
+        IReadOnlyList<ModulationMatrix.RouteEntry> routes,
+        in ModulationSourceValues sourceValues,
+        int oscillatorIndex)
+    {
+        return new VoiceModulationState(
+            Pitch: EvaluateAmount(routes, ModulationDestination.Pitch, sourceValues, oscillatorIndex),
+            FilterCutoff: 0f,
+            FilterResonance: 0f,
+            Gain: EvaluateAmount(routes, ModulationDestination.Gain, sourceValues, oscillatorIndex),
+            Pan: EvaluateAmount(routes, ModulationDestination.Pan, sourceValues, oscillatorIndex),
+            PulseWidth: EvaluateAmount(routes, ModulationDestination.PulseWidth, sourceValues, oscillatorIndex),
+            Lfo1Rate: 0f,
+            Lfo2Rate: 0f);
+    }
+
     public static GlobalModulationState EvaluateGlobal(
         IReadOnlyList<ModulationMatrix.RouteEntry> routes,
         in ModulationSourceValues sourceValues)

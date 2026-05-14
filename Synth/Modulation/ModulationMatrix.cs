@@ -22,6 +22,11 @@ internal sealed class ModulationMatrix(IEnumerable<ModulationRoute> routes)
         return ModulationEvaluator.EvaluateVoice(_routes, sourceValues, oscillatorIndex);
     }
 
+    public VoiceModulationState EvaluateOscillator(in ModulationSourceValues sourceValues, int oscillatorIndex)
+    {
+        return ModulationEvaluator.EvaluateOscillator(_routes, sourceValues, oscillatorIndex);
+    }
+
     public GlobalModulationState EvaluateGlobal(in ModulationSourceValues sourceValues)
     {
         return ModulationEvaluator.EvaluateGlobal(_routes, sourceValues);

@@ -21,8 +21,8 @@ internal sealed class VoiceOscNode(string name, SynthVoice voice, VoiceRuntimeCo
         float[] filterCutoffBuffer = _runtime.FilterState.CutoffBuffer;
         float[] filterResonanceBuffer = _runtime.FilterState.ResonanceBuffer;
         int activeOscillatorCount = _voice.ActiveOscillatorCount;
-        OscillatorSnapshot[] oscillatorSnapshots = new OscillatorSnapshot[activeOscillatorCount];
-        SynthVoice.OscillatorState[] oscillatorStates = new SynthVoice.OscillatorState[activeOscillatorCount];
+        OscillatorSnapshot[] oscillatorSnapshots = _runtime.OscillatorSnapshots;
+        SynthVoice.OscillatorState[] oscillatorStates = _runtime.OscillatorStates;
         int enabledOscillatorCount = 0;
 
         for (int oscillatorIndex = 0; oscillatorIndex < activeOscillatorCount; oscillatorIndex++)
@@ -111,7 +111,7 @@ internal sealed class VoiceOscNode(string name, SynthVoice voice, VoiceRuntimeCo
                     continue;
                 }
 
-                VoiceModulationState oscillatorModulationState = patchSnapshot.ModulationMatrix.EvaluateVoice(sourceValues, oscillatorIndex);
+                VoiceModulationState oscillatorModulationState = patchSnapshot.ModulationMatrix.EvaluateOscillator(sourceValues, oscillatorIndex);
                 float effectiveFrequency = ApplyVibrato(oscillator.CurrentFrequency, deltaTime, oscillator, oscillatorParameters);
                 effectiveFrequency = ApplyPitchModulation(effectiveFrequency, oscillatorModulationState.Pitch);
                 float oscillatorSample = GetWaveSample(oscillator, oscillatorParameters, deltaTime, oscillatorModulationState.PulseWidth);
