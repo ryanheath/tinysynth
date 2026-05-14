@@ -31,7 +31,7 @@ AudioStream.SetBufferSizeDefault(audioBufferFrameCount);
 AudioStream audioStream = AudioStream.Load(sampleRate, 32, audioChannelCount);
 audioStream.Play();
 audioBufferPointer = Marshal.AllocHGlobal(audioBuffer.Length * sizeof(float));
-AudioStreamPump audioStreamPump = new(audioStream, audioBufferPointer, audioBuffer);
+AudioStreamPump audioStreamPump = new(audioStream, audioBufferPointer, audioBuffer, sampleRate, audioChannelCount);
 IReadOnlyList<IInputDevice> inputDevices =
 [
     new ComputerKeyboardInputDevice(),

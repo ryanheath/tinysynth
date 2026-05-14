@@ -249,6 +249,13 @@ internal sealed class TinySynthController
             : $"Envelope: {_synthEngine.DisplayEnvelopeStage} | Chord: {possibleChord}";
         Graphics.DrawText(envelopeStatus, (int)controlPanel.X + 470, (int)controlPanel.Y + 82, 18, _mutedTextColor);
 
+        AudioDiagnostics diagnostics = _audioStreamPump.Diagnostics;
+        string audioStatus = $"Audio: {diagnostics.LastRenderMilliseconds:0.00}/{diagnostics.BlockBudgetMilliseconds:0.00} ms | Avg {diagnostics.AverageRenderMilliseconds:0.00} | Overruns {diagnostics.OverrunCount} | Pops {diagnostics.DiscontinuityCount} | Max jump {diagnostics.MaxDiscontinuity:0.000} | Clips {diagnostics.ClipCount} | Peak {diagnostics.PeakLevel:0.000}";
+        Color audioStatusColor = diagnostics.IsOverBudget || diagnostics.ClipCount > 0
+            ? _accentStrongColor
+            : _mutedTextColor;
+        Graphics.DrawText(audioStatus, (int)controlPanel.X + 470, (int)controlPanel.Y + 108, 18, audioStatusColor);
+
         SynthRenderer.DrawWaveformScope(waveformPanel, _audioStreamPump.ScopeBuffer, _audioStreamPump.ScopeWriteIndex);
         float newMasterVolume = KeyboardController.Draw(
             keyboardPanel,
