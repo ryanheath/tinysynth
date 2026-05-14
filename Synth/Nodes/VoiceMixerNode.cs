@@ -4,20 +4,22 @@ namespace TinySynth.Synth.Nodes;
 
 internal sealed class VoiceMixerNode(string name, bool normalizeByVoiceCount, params AudioNode[] inputs) : AudioNode(name, inputs)
 {
+    private const float SilenceThreshold = 0.000001f;
+
     private readonly bool _normalizeByVoiceCount = normalizeByVoiceCount;
 
     protected override void Process(in AudioRenderContext context, IReadOnlyList<AudioNode> inputs, AudioBuffer output)
     {
         int activeInputCount = 0;
+        Span<float> mixedSamples = output.Samples;
 
         foreach (AudioNode input in inputs)
         {
-            if (IsSilent(input.Output))
+            if (!AddIfAudible(input.Output, mixedSamples))
             {
                 continue;
             }
 
-            output.AddFrom(input.Output);
             activeInputCount++;
         }
 
@@ -27,26 +29,31 @@ internal sealed class VoiceMixerNode(string name, bool normalizeByVoiceCount, pa
         }
 
         float scale = 1f / MathF.Sqrt(activeInputCount);
-        Span<float> samples = output.Samples;
 
-        for (int i = 0; i < samples.Length; i++)
+        for (int i = 0; i < mixedSamples.Length; i++)
         {
-            samples[i] *= scale;
+            mixedSamples[i] *= scale;
         }
     }
 
-    private static bool IsSilent(AudioBuffer buffer)
+    private static bool AddIfAudible(AudioBuffer buffer, Span<float> destination)
     {
         ReadOnlySpan<float> samples = buffer.ReadOnlySamples;
+        int sampleCount = Math.Min(samples.Length, destination.Length);
+        bool hasAudibleSample = false;
 
-        for (int i = 0; i < samples.Length; i++)
+        for (int i = 0; i < sampleCount; i++)
         {
-            if (MathF.Abs(samples[i]) > 0.000001f)
+            float sample = samples[i];
+
+            if (!hasAudibleSample && MathF.Abs(sample) > SilenceThreshold)
             {
-                return false;
+                hasAudibleSample = true;
             }
+
+            destination[i] += sample;
         }
 
-        return true;
+        return hasAudibleSample;
     }
 }

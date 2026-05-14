@@ -95,15 +95,9 @@ internal sealed class SynthEngine
     private void RefreshVoiceState()
     {
         _voicePool.ClearHeldStateForIdleVoices();
-        VoiceActivitySnapshot voiceState = VoiceStateAggregator.CaptureActivity(_voicePool.Slots);
-        _activeNotes.Clear();
-        foreach (int midiNote in voiceState.ActiveNotes)
-        {
-            _activeNotes.Add(midiNote);
-        }
-
-        ActiveVoiceCount = voiceState.ActiveVoiceCount;
-        _displaySlot = voiceState.DisplaySlot;
+        VoiceStateAggregator.CaptureActivity(_voicePool.Slots, _activeNotes, out int activeVoiceCount, out VoiceSlot? displaySlot);
+        ActiveVoiceCount = activeVoiceCount;
+        _displaySlot = displaySlot;
     }
 
     private AudioGraphScheduler CreateAudioGraphScheduler()

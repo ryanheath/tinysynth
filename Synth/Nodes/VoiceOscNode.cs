@@ -16,9 +16,26 @@ internal sealed class VoiceOscNode(string name, SynthVoice voice, VoiceRuntimeCo
     {
         _runtime.FilterState.EnsureBuffers(context.FrameCount);
 
+        SynthPatchSnapshot patchSnapshot = context.PatchSnapshot;
         float[] outputBuffer = output.SampleArray;
         float[] filterCutoffBuffer = _runtime.FilterState.CutoffBuffer;
         float[] filterResonanceBuffer = _runtime.FilterState.ResonanceBuffer;
+        int activeOscillatorCount = _voice.ActiveOscillatorCount;
+        OscillatorSnapshot[] oscillatorSnapshots = new OscillatorSnapshot[activeOscillatorCount];
+        SynthVoice.OscillatorState[] oscillatorStates = new SynthVoice.OscillatorState[activeOscillatorCount];
+        int enabledOscillatorCount = 0;
+
+        for (int oscillatorIndex = 0; oscillatorIndex < activeOscillatorCount; oscillatorIndex++)
+        {
+            OscillatorSnapshot oscillatorSnapshot = patchSnapshot.GetOscillator(oscillatorIndex);
+            oscillatorSnapshots[oscillatorIndex] = oscillatorSnapshot;
+            oscillatorStates[oscillatorIndex] = _voice.GetOscillatorState(oscillatorIndex);
+
+            if (oscillatorSnapshot.Enabled)
+            {
+                enabledOscillatorCount++;
+            }
+        }
 
         if (_voice.EnvelopeStage == EnvelopeStage.Idle || _voice.ActiveMidiNote < 0)
         {
@@ -29,39 +46,41 @@ internal sealed class VoiceOscNode(string name, SynthVoice voice, VoiceRuntimeCo
             return;
         }
 
-        SynthPatchSnapshot patchSnapshot = context.PatchSnapshot;
         float deltaTime = 1f / _voice.SampleRate;
-        int enabledOscillatorCount = GetEnabledOscillatorCount(_voice, patchSnapshot);
+        float sampleRateLimit = _voice.SampleRate * 0.45f;
+        float baseCutoffHz = Math.Clamp(patchSnapshot.FilterCutoffHz, 20f, sampleRateLimit);
+        float baseResonance = Math.Clamp(patchSnapshot.FilterResonance, 0f, 1f);
+        float keyTrackValue = VoiceRuntimeInspector.GetKeyTrackValue(_voice.ActiveMidiNote);
+        float normalization = enabledOscillatorCount > 0 ? 1f / MathF.Sqrt(enabledOscillatorCount) : 0f;
 
         for (int frameIndex = 0; frameIndex < context.FrameCount; frameIndex++)
         {
             if (_voice.EnvelopeStage == EnvelopeStage.Idle || _voice.ActiveMidiNote < 0 || enabledOscillatorCount == 0)
             {
                 _runtime.ModulationRuntime.AverageEnvelopeLevel = 0f;
-                filterCutoffBuffer[frameIndex] = Math.Clamp(patchSnapshot.FilterCutoffHz, 20f, _voice.SampleRate * 0.45f);
-                filterResonanceBuffer[frameIndex] = Math.Clamp(patchSnapshot.FilterResonance, 0f, 1f);
+                filterCutoffBuffer[frameIndex] = baseCutoffHz;
+                filterResonanceBuffer[frameIndex] = baseResonance;
                 continue;
             }
 
             float leftSample = 0f;
             float rightSample = 0f;
 
-            for (int oscillatorIndex = 0; oscillatorIndex < _voice.ActiveOscillatorCount; oscillatorIndex++)
+            for (int oscillatorIndex = 0; oscillatorIndex < activeOscillatorCount; oscillatorIndex++)
             {
-                OscillatorSnapshot oscillatorParameters = patchSnapshot.GetOscillator(oscillatorIndex);
+                OscillatorSnapshot oscillatorParameters = oscillatorSnapshots[oscillatorIndex];
                 if (!oscillatorParameters.Enabled)
                 {
                     continue;
                 }
 
-                SynthVoice.OscillatorState oscillator = _voice.GetOscillatorState(oscillatorIndex);
+                SynthVoice.OscillatorState oscillator = oscillatorStates[oscillatorIndex];
                 UpdateEnvelope(_voice, deltaTime, oscillator, oscillatorParameters);
                 UpdateFrequency(_voice, deltaTime, oscillator, oscillatorParameters);
             }
 
-            float envelopeLevel = GetAverageEnvelopeLevel(_voice, patchSnapshot);
+            float envelopeLevel = GetAverageEnvelopeLevel(oscillatorSnapshots, oscillatorStates, activeOscillatorCount);
             _runtime.ModulationRuntime.AverageEnvelopeLevel = envelopeLevel;
-            float keyTrackValue = VoiceRuntimeInspector.GetKeyTrackValue(_voice.ActiveMidiNote);
             ModulationSourceValues rateSourceValues = new(0f, 0f, envelopeLevel, keyTrackValue);
             VoiceModulationState lfoRateModulationState = patchSnapshot.ModulationMatrix.EvaluateVoice(rateSourceValues, oscillatorIndex: -1);
             float lfo1Rate = GetModulatedLfoRate(patchSnapshot.Lfo1.RateHz, lfoRateModulationState.Lfo1Rate);
@@ -74,18 +93,18 @@ internal sealed class VoiceOscNode(string name, SynthVoice voice, VoiceRuntimeCo
             _runtime.ModulationRuntime.LfoPhase2 = modulationLfoPhase2;
             ModulationSourceValues sourceValues = new(lfo1Value, lfo2Value, envelopeLevel, keyTrackValue);
             VoiceModulationState sharedModulationState = patchSnapshot.ModulationMatrix.EvaluateVoice(sourceValues, oscillatorIndex: -1);
-            filterCutoffBuffer[frameIndex] = GetModulatedFilterCutoffHz(_voice.SampleRate, patchSnapshot, sharedModulationState);
-            filterResonanceBuffer[frameIndex] = Math.Clamp(patchSnapshot.FilterResonance + sharedModulationState.FilterResonance, 0f, 1f);
+            filterCutoffBuffer[frameIndex] = GetModulatedFilterCutoffHz(baseCutoffHz, sampleRateLimit, sharedModulationState.FilterCutoff);
+            filterResonanceBuffer[frameIndex] = Math.Clamp(baseResonance + sharedModulationState.FilterResonance, 0f, 1f);
 
-            for (int oscillatorIndex = 0; oscillatorIndex < _voice.ActiveOscillatorCount; oscillatorIndex++)
+            for (int oscillatorIndex = 0; oscillatorIndex < activeOscillatorCount; oscillatorIndex++)
             {
-                OscillatorSnapshot oscillatorParameters = patchSnapshot.GetOscillator(oscillatorIndex);
+                OscillatorSnapshot oscillatorParameters = oscillatorSnapshots[oscillatorIndex];
                 if (!oscillatorParameters.Enabled)
                 {
                     continue;
                 }
 
-                SynthVoice.OscillatorState oscillator = _voice.GetOscillatorState(oscillatorIndex);
+                SynthVoice.OscillatorState oscillator = oscillatorStates[oscillatorIndex];
 
                 if (oscillator.EnvelopeLevel <= 0f && _voice.EnvelopeStage == EnvelopeStage.Release)
                 {
@@ -113,7 +132,6 @@ internal sealed class VoiceOscNode(string name, SynthVoice voice, VoiceRuntimeCo
                 _runtime.ModulationRuntime.AverageEnvelopeLevel = 0f;
             }
 
-            float normalization = 1f / MathF.Sqrt(enabledOscillatorCount);
             int sampleIndex = frameIndex * StereoChannelCount;
             outputBuffer[sampleIndex] = leftSample * normalization;
             outputBuffer[sampleIndex + 1] = rightSample * normalization;
@@ -302,45 +320,32 @@ internal sealed class VoiceOscNode(string name, SynthVoice voice, VoiceRuntimeCo
         return PitchMath.ApplyDetune(baseFrequency, pitchCents);
     }
 
-    private static int GetEnabledOscillatorCount(SynthVoice voice, SynthPatchSnapshot patchSnapshot)
-    {
-        int count = 0;
-
-        for (int i = 0; i < voice.ActiveOscillatorCount; i++)
-        {
-            if (patchSnapshot.GetOscillator(i).Enabled)
-            {
-                count++;
-            }
-        }
-
-        return count;
-    }
-
-    private static float GetAverageEnvelopeLevel(SynthVoice voice, SynthPatchSnapshot patchSnapshot)
+    private static float GetAverageEnvelopeLevel(
+        OscillatorSnapshot[] oscillatorSnapshots,
+        SynthVoice.OscillatorState[] oscillatorStates,
+        int activeOscillatorCount)
     {
         float totalEnvelope = 0f;
         int enabledOscillatorCount = 0;
 
-        for (int i = 0; i < voice.ActiveOscillatorCount; i++)
+        for (int i = 0; i < activeOscillatorCount; i++)
         {
-            if (!patchSnapshot.GetOscillator(i).Enabled)
+            if (!oscillatorSnapshots[i].Enabled)
             {
                 continue;
             }
 
-            totalEnvelope += voice.GetOscillatorState(i).EnvelopeLevel;
+            totalEnvelope += oscillatorStates[i].EnvelopeLevel;
             enabledOscillatorCount++;
         }
 
         return enabledOscillatorCount == 0 ? 0f : totalEnvelope / enabledOscillatorCount;
     }
 
-    private static float GetModulatedFilterCutoffHz(int sampleRate, SynthPatchSnapshot patchSnapshot, VoiceModulationState modulationState)
+    private static float GetModulatedFilterCutoffHz(float baseCutoffHz, float sampleRateLimit, float cutoffOctaves)
     {
-        float baseCutoffHz = Math.Clamp(patchSnapshot.FilterCutoffHz, 20f, sampleRate * 0.45f);
-        float modulatedCutoffHz = baseCutoffHz * MathF.Pow(2f, modulationState.FilterCutoff);
-        return Math.Clamp(modulatedCutoffHz, 20f, sampleRate * 0.45f);
+        float modulatedCutoffHz = baseCutoffHz * MathF.Pow(2f, cutoffOctaves);
+        return Math.Clamp(modulatedCutoffHz, 20f, sampleRateLimit);
     }
 
     private static bool HasEnabledOscillator(SynthVoice voice, SynthPatchSnapshot patchSnapshot)

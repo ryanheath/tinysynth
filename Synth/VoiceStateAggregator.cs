@@ -4,11 +4,11 @@ namespace TinySynth.Synth;
 
 internal static class VoiceStateAggregator
 {
-    public static VoiceActivitySnapshot CaptureActivity(IReadOnlyList<VoiceSlot> slots)
+    public static void CaptureActivity(IReadOnlyList<VoiceSlot> slots, HashSet<int> activeNotes, out int activeVoiceCount, out VoiceSlot? displaySlot)
     {
-        HashSet<int> activeNotes = [];
-        int activeVoiceCount = 0;
-        VoiceSlot? displaySlot = null;
+        activeNotes.Clear();
+        activeVoiceCount = 0;
+        displaySlot = null;
 
         foreach (VoiceSlot slot in slots)
         {
@@ -25,8 +25,6 @@ internal static class VoiceStateAggregator
                 displaySlot = slot;
             }
         }
-
-        return new VoiceActivitySnapshot(activeNotes, activeVoiceCount, displaySlot);
     }
 
     public static GlobalModulationInputs CaptureGlobalModulationInputs(IReadOnlyList<VoiceSlot> slots)
