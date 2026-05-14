@@ -394,7 +394,7 @@ internal sealed class VoiceOscNode(string name, SynthVoice voice, VoiceRuntimeCo
             Waveform.Saw => (2f * phase) - 1f,
             Waveform.Triangle => 1f - (4f * MathF.Abs(phase - 0.5f)),
             Waveform.Noise => Random.Shared.NextSingle() * 2f - 1f,
-            Waveform.SuperSaw => GetSuperSawSample(phase),
+            Waveform.SuperSaw => GetSuperSawSample(oscillator),
             Waveform.Organ => GetOrganSample(phase),
             Waveform.Metallic => GetMetallicSample(phase),
             Waveform.PinkNoise => GetPinkNoiseSample(),
@@ -417,18 +417,13 @@ internal sealed class VoiceOscNode(string name, SynthVoice voice, VoiceRuntimeCo
         return oscillator.Phase < pulseWidth ? 1f : -1f;
     }
 
-    private static float GetSuperSawSample(float phase)
+    private static float GetSuperSawSample(SynthVoice.OscillatorState oscillator)
     {
-        float detuneA = WrapPhase(phase + 0.0125f);
-        float detuneB = WrapPhase(phase - 0.0175f);
-        float detuneC = WrapPhase(phase + 0.031f);
-
-        float sample = GetSawSample(phase);
-        sample += GetSawSample(detuneA) * 0.8f;
-        sample += GetSawSample(detuneB) * 0.7f;
-        sample += GetSawSample(detuneC) * 0.55f;
-
-        return sample / 3.05f;
+        float sample = GetSawSample(oscillator.Phase) * 0.34f;
+        sample += GetSawSample(oscillator.SuperSawPhaseA) * 0.24f;
+        sample += GetSawSample(oscillator.SuperSawPhaseB) * 0.22f;
+        sample += GetSawSample(oscillator.SuperSawPhaseC) * 0.20f;
+        return sample;
     }
 
     private static float GetOrganSample(float phase)
@@ -470,8 +465,16 @@ internal sealed class VoiceOscNode(string name, SynthVoice voice, VoiceRuntimeCo
 
     private static void AdvancePhase(SynthVoice voice, SynthVoice.OscillatorState oscillator, float frequency)
     {
-        oscillator.Phase += frequency / voice.SampleRate;
-        oscillator.Phase -= MathF.Floor(oscillator.Phase);
+        float phaseStep = frequency / voice.SampleRate;
+        oscillator.Phase = WrapPhase(oscillator.Phase + phaseStep);
+
+        const float detuneCentsA = -9f;
+        const float detuneCentsB = 11f;
+        const float detuneCentsC = 19f;
+
+        oscillator.SuperSawPhaseA = WrapPhase(oscillator.SuperSawPhaseA + (PitchMath.ApplyDetune(frequency, detuneCentsA) / voice.SampleRate));
+        oscillator.SuperSawPhaseB = WrapPhase(oscillator.SuperSawPhaseB + (PitchMath.ApplyDetune(frequency, detuneCentsB) / voice.SampleRate));
+        oscillator.SuperSawPhaseC = WrapPhase(oscillator.SuperSawPhaseC + (PitchMath.ApplyDetune(frequency, detuneCentsC) / voice.SampleRate));
     }
 
 }

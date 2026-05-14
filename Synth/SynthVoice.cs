@@ -72,6 +72,9 @@ internal sealed class SynthVoice
             if (!isAudible || forceRestart)
             {
                 oscillator.Phase = 0f;
+                oscillator.SuperSawPhaseA = 0f;
+                oscillator.SuperSawPhaseB = 0f;
+                oscillator.SuperSawPhaseC = 0f;
                 oscillator.VibratoPhase = 0f;
                 oscillator.PwmPhase = 0f;
                 oscillator.EnvelopeLevel = 0f;
@@ -130,6 +133,12 @@ internal sealed class SynthVoice
         public float TargetFrequency { get; set; } = defaultFrequency;
 
         public float Phase { get; set; }
+
+        public float SuperSawPhaseA { get; set; }
+
+        public float SuperSawPhaseB { get; set; }
+
+        public float SuperSawPhaseC { get; set; }
 
         public float VibratoPhase { get; set; }
 
