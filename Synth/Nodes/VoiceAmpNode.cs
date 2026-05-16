@@ -10,7 +10,7 @@ internal sealed class VoiceAmpNode(string name, SynthVoice voice, AudioNode inpu
     {
         float[] inputSamples = inputs[0].Output.SampleArray;
         float[] outputSamples = output.SampleArray;
-        float gain = _voice.MasterGain;
+        float gain = _voice.MasterGain * _voice.NoteVelocity;
 
         for (int i = 0; i < inputSamples.Length; i++)
         {

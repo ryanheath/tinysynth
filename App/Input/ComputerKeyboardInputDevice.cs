@@ -5,6 +5,8 @@ namespace TinySynth.App.Input;
 
 internal sealed class ComputerKeyboardInputDevice : IInputDevice
 {
+    private const int DefaultVelocity = 127;
+
     private static readonly (KeyboardKey Key, int MidiNote)[] KeyboardMappings =
     [
         (KeyboardKey.Z, 60),
@@ -26,14 +28,14 @@ internal sealed class ComputerKeyboardInputDevice : IInputDevice
     {
         if (RaylibInput.IsKeyPressed(KeyboardKey.Space))
         {
-            actions.Add(new InputAction(InputActionType.HoldPedalToggle));
+            actions.Add(new HoldPedalSetInputAction(!context.HoldPedalEnabled));
         }
 
         foreach ((KeyboardKey key, int midiNote) in KeyboardMappings)
         {
             if (RaylibInput.IsKeyDown(key))
             {
-                actions.Add(new InputAction(InputActionType.NoteActive, midiNote));
+                actions.Add(new NoteActiveInputAction(midiNote, DefaultVelocity));
             }
         }
     }

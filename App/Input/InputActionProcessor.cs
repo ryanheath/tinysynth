@@ -6,6 +6,7 @@ internal sealed class InputActionProcessor
 {
     private readonly HashSet<int> _currentPhysicalMidiNotes = [];
     private readonly HashSet<int> _previousPhysicalMidiNotes = [];
+    private readonly Dictionary<int, int> _currentNoteVelocities = [];
     private readonly List<int> _noteChangeBuffer = [];
 
     public bool HoldPedalEnabled { get; private set; }
@@ -13,17 +14,19 @@ internal sealed class InputActionProcessor
     public void ApplyActions(IReadOnlyCollection<InputAction> inputActions, SynthEngine synthEngine, SynthParameters synthParameters)
     {
         _currentPhysicalMidiNotes.Clear();
+        _currentNoteVelocities.Clear();
 
         foreach (InputAction inputAction in inputActions)
         {
-            switch (inputAction.Type)
+            switch (inputAction)
             {
-                case InputActionType.NoteActive when inputAction.MidiNote is int midiNote:
+                case NoteActiveInputAction { MidiNote: int midiNote, Velocity: int velocity }:
                     _currentPhysicalMidiNotes.Add(midiNote);
+                    _currentNoteVelocities[midiNote] = velocity;
                     break;
 
-                case InputActionType.HoldPedalToggle:
-                    HoldPedalEnabled = !HoldPedalEnabled;
+                case HoldPedalSetInputAction { IsEnabled: bool isEnabled } when HoldPedalEnabled != isEnabled:
+                    HoldPedalEnabled = isEnabled;
                     synthEngine.SetHoldPedal(HoldPedalEnabled);
                     break;
             }
@@ -46,7 +49,8 @@ internal sealed class InputActionProcessor
 
         foreach (int note in _noteChangeBuffer)
         {
-            synthEngine.NoteOn(note, synthParameters);
+            int velocity = _currentNoteVelocities.GetValueOrDefault(note, 127);
+            synthEngine.NoteOn(note, velocity, synthParameters);
         }
 
         _noteChangeBuffer.Clear();

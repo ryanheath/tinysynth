@@ -59,9 +59,9 @@ internal sealed class SynthEngine
         RefreshVoiceState();
     }
 
-    public void NoteOn(int midiNote, SynthParameters parameters)
+    public void NoteOn(int midiNote, int velocity, SynthParameters parameters)
     {
-        _voicePool.StartNote(midiNote, parameters);
+        _voicePool.StartNote(midiNote, velocity, parameters);
         RefreshVoiceState();
     }
 

@@ -21,7 +21,7 @@ internal enum ParameterSection
     Fx
 }
 
-internal sealed class TinySynthController
+internal sealed class TinySynthController : IDisposable
 {
     private readonly int _keyboardStartMidi;
     private readonly int _keyboardNoteCount;
@@ -34,6 +34,7 @@ internal sealed class TinySynthController
     private readonly SynthParameters _synthParameters;
     private readonly SynthEngine _synthEngine;
     private readonly IReadOnlyList<IInputDevice> _inputDevices;
+    private readonly MidiController _midiController;
     private readonly InputActionProcessor _inputActionProcessor = new();
     private readonly List<InputAction> _inputActions = [];
 
@@ -74,6 +75,12 @@ internal sealed class TinySynthController
         _synthEngine = new SynthEngine(sampleRate, masterGain, keyboardStartMidi, voiceCount: 4);
         _masterVolume = masterGain;
         _inputDevices = inputDevices;
+        _midiController = new MidiController(_inputDevices);
+    }
+
+    public void Dispose()
+    {
+        _midiController.Dispose();
     }
 
     public void RunFrame()
@@ -121,7 +128,7 @@ internal sealed class TinySynthController
 
         PianoKeyLayout[] keys = KeyboardLayoutBuilder.Build(keyboardPanel, _keyboardStartMidi, _keyboardNoteCount);
         int hoveredMidiNote = KeyboardLayoutBuilder.GetHoveredMidiNote(keys, mousePosition);
-        InputDeviceContext inputDeviceContext = new(mousePosition, mousePressed, mouseDown, mouseReleased);
+        InputDeviceContext inputDeviceContext = new(mousePosition, mousePressed, mouseDown, mouseReleased, _inputActionProcessor.HoldPedalEnabled);
         _inputActions.Clear();
 
         foreach (IInputDevice inputDevice in _inputDevices)
@@ -248,6 +255,7 @@ internal sealed class TinySynthController
             ? $"Envelope: {_synthEngine.DisplayEnvelopeStage}"
             : $"Envelope: {_synthEngine.DisplayEnvelopeStage} | Chord: {possibleChord}";
         Graphics.DrawText(envelopeStatus, (int)controlPanel.X + 470, (int)controlPanel.Y + 82, 18, _mutedTextColor);
+        _midiController.DrawStatus((int)controlPanel.X + 470, (int)controlPanel.Y + 112, _mutedTextColor);
 
         SynthRenderer.DrawWaveformScope(waveformPanel, _audioStreamPump.ScopeBuffer, _audioStreamPump.ScopeWriteIndex);
         float newMasterVolume = KeyboardController.Draw(

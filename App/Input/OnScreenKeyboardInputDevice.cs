@@ -5,6 +5,8 @@ namespace TinySynth.App.Input;
 
 internal sealed class OnScreenKeyboardInputDevice : IOnScreenInputDevice
 {
+    private const int DefaultVelocity = 127;
+
     private int _activePointerMidiNote = -1;
     private PianoKeyLayout[] _keys = [];
     private Rectangle _holdPedalBounds;
@@ -19,7 +21,7 @@ internal sealed class OnScreenKeyboardInputDevice : IOnScreenInputDevice
     {
         if (context.MousePressed && Contains(_holdPedalBounds, context.MousePosition))
         {
-            actions.Add(new InputAction(InputActionType.HoldPedalToggle));
+            actions.Add(new HoldPedalSetInputAction(!context.HoldPedalEnabled));
         }
 
         int hoveredMidiNote = KeyboardLayoutBuilder.GetHoveredMidiNote(_keys, context.MousePosition);
@@ -39,7 +41,7 @@ internal sealed class OnScreenKeyboardInputDevice : IOnScreenInputDevice
 
         if (_activePointerMidiNote >= 0)
         {
-            actions.Add(new InputAction(InputActionType.NoteActive, _activePointerMidiNote));
+            actions.Add(new NoteActiveInputAction(_activePointerMidiNote, DefaultVelocity));
         }
     }
 

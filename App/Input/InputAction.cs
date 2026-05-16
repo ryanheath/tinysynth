@@ -1,5 +1,7 @@
 namespace TinySynth.App.Input;
 
-internal readonly record struct InputAction(
-    InputActionType Type,
-    int? MidiNote = null);
+internal abstract record class InputAction;
+
+internal sealed record class NoteActiveInputAction(int MidiNote, int Velocity) : InputAction;
+
+internal sealed record class HoldPedalSetInputAction(bool IsEnabled) : InputAction;

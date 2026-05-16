@@ -34,6 +34,8 @@ internal sealed class SynthVoice
 
     public int ActiveMidiNote { get; private set; } = -1;
 
+    internal float NoteVelocity { get; private set; } = 1f;
+
     internal int SampleRate => _sampleRate;
 
     internal float MasterGain => _masterGain;
@@ -45,12 +47,13 @@ internal sealed class SynthVoice
         _masterGain = masterGain;
     }
 
-    public void StartNote(int midiNote, SynthParameters parameters, bool forceRestart = false)
+    public void StartNote(int midiNote, int velocity, SynthParameters parameters, bool forceRestart = false)
     {
         bool isAudible = EnvelopeStage != EnvelopeStage.Idle && VoiceRuntimeInspector.HasAudibleOscillator(this);
         float noteFrequency = MidiUtilities.MidiToFrequency(midiNote);
 
         ActiveMidiNote = midiNote;
+        NoteVelocity = Math.Clamp(velocity, 0, 127) / 127f;
         _activeOscillatorCount = parameters.Oscillators.Count;
         _isOneShotVoice = VoiceRuntimeInspector.HasOnlyOneShotOscillators(this, parameters);
 
@@ -90,6 +93,7 @@ internal sealed class SynthVoice
         if (EnvelopeStage == EnvelopeStage.Idle)
         {
             ActiveMidiNote = -1;
+            NoteVelocity = 1f;
         }
     }
 
@@ -124,6 +128,11 @@ internal sealed class SynthVoice
     {
         ActiveMidiNote = activeMidiNote;
         EnvelopeStage = envelopeStage;
+
+        if (envelopeStage == EnvelopeStage.Idle)
+        {
+            NoteVelocity = 1f;
+        }
     }
 
     internal sealed class OscillatorState(float defaultFrequency)

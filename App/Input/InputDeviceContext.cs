@@ -6,4 +6,5 @@ internal readonly record struct InputDeviceContext(
     Vector2 MousePosition,
     bool MousePressed,
     bool MouseDown,
-    bool MouseReleased);
+    bool MouseReleased,
+    bool HoldPedalEnabled);

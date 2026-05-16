@@ -12,6 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="NAudio" Version="2.3.0" />
     <PackageReference Include="raylib-csharp" Version="5.0.0" />
   </ItemGroup>
 

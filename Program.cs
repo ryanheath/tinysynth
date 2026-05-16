@@ -20,7 +20,6 @@ const float controlPanelHeight = 420f;
 const float keyboardPanelHeight = 180f;
 
 float[] audioBuffer = new float[audioBufferFrameCount * audioChannelCount];
-IntPtr audioBufferPointer = IntPtr.Zero;
 
 Raylib_CSharp.Raylib.SetConfigFlags(ConfigFlags.HighDpiWindow);
 Window.Init(screenWidth, screenHeight, "TinySynth");
@@ -30,10 +29,11 @@ AudioDevice.Init();
 AudioStream.SetBufferSizeDefault(audioBufferFrameCount);
 AudioStream audioStream = AudioStream.Load(sampleRate, 32, audioChannelCount);
 audioStream.Play();
-audioBufferPointer = Marshal.AllocHGlobal(audioBuffer.Length * sizeof(float));
+var audioBufferPointer = Marshal.AllocHGlobal(audioBuffer.Length * sizeof(float));
 AudioStreamPump audioStreamPump = new(audioStream, audioBufferPointer, audioBuffer);
 IReadOnlyList<IInputDevice> inputDevices =
 [
+    new MidiInputDevice(),
     new ComputerKeyboardInputDevice(),
     new OnScreenKeyboardInputDevice()
 ];
@@ -59,6 +59,8 @@ try
 }
 finally
 {
+    app.Dispose();
+
     if (audioBufferPointer != IntPtr.Zero)
     {
         Marshal.FreeHGlobal(audioBufferPointer);
