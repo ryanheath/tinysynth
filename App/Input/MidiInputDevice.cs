@@ -77,7 +77,7 @@ internal sealed class MidiInputDevice : IInputDevice, IDisposable
             switch (e.MidiEvent.CommandCode)
             {
                 case MidiCommandCode.NoteOn:
-                    NoteOnEvent noteOnEvent = (NoteOnEvent)e.MidiEvent;
+                    NoteEvent noteOnEvent = (NoteEvent)e.MidiEvent;
                     if (noteOnEvent.Velocity > 0)
                     {
                         _activeNotes[noteOnEvent.NoteNumber] = noteOnEvent.Velocity;
