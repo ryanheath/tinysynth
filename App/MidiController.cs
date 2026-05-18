@@ -4,7 +4,7 @@ using TinySynth.App.Input;
 
 namespace TinySynth.App;
 
-internal sealed class MidiController(IReadOnlyList<IInputDevice> inputDevices) : IDisposable
+internal sealed class MidiController(IReadOnlyList<IInputDevice> inputDevices)
 {
     private readonly MidiInputDevice? _midiInputDevice = inputDevices.OfType<MidiInputDevice>().FirstOrDefault();
 
@@ -16,10 +16,5 @@ internal sealed class MidiController(IReadOnlyList<IInputDevice> inputDevices) :
         {
             Graphics.DrawText(midiStatus, x, y, 18, textColor);
         }
-    }
-
-    public void Dispose()
-    {
-        _midiInputDevice?.Dispose();
     }
 }

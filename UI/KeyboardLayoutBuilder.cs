@@ -55,7 +55,7 @@ internal static class KeyboardLayoutBuilder
     {
         foreach (PianoKeyLayout key in keys.Where(static key => key.IsBlack))
         {
-            if (Contains(key.Bounds, mousePosition))
+            if (UiHitTesting.Contains(key.Bounds, mousePosition))
             {
                 return key.MidiNote;
             }
@@ -63,7 +63,7 @@ internal static class KeyboardLayoutBuilder
 
         foreach (PianoKeyLayout key in keys.Where(static key => !key.IsBlack))
         {
-            if (Contains(key.Bounds, mousePosition))
+            if (UiHitTesting.Contains(key.Bounds, mousePosition))
             {
                 return key.MidiNote;
             }
@@ -72,11 +72,4 @@ internal static class KeyboardLayoutBuilder
         return -1;
     }
 
-    private static bool Contains(Rectangle bounds, System.Numerics.Vector2 point)
-    {
-        return point.X >= bounds.X
-            && point.X <= bounds.X + bounds.Width
-            && point.Y >= bounds.Y
-            && point.Y <= bounds.Y + bounds.Height;
-    }
 }

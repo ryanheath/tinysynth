@@ -80,7 +80,13 @@ internal sealed class TinySynthController : IDisposable
 
     public void Dispose()
     {
-        _midiController.Dispose();
+        foreach (IInputDevice inputDevice in _inputDevices)
+        {
+            if (inputDevice is IDisposable disposableInputDevice)
+            {
+                disposableInputDevice.Dispose();
+            }
+        }
     }
 
     public void RunFrame()

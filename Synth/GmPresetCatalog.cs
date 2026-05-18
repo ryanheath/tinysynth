@@ -44,13 +44,18 @@ internal static class GmPresetCatalog
         CreatePreset(GmInstrumentFamily.SoundEffects, "Helicopter", "Chopped noise wash with PWM rotor feel.", p => ConfigureSoundFx(p, burst: true))
     ];
 
-    public static IReadOnlyList<GmPreset> Presets => _presets;
-
     public static IReadOnlyList<GmInstrumentFamily> Families { get; } = Enum.GetValues<GmInstrumentFamily>();
+
+    private static readonly IReadOnlyDictionary<GmInstrumentFamily, IReadOnlyList<GmPreset>> _presetsByFamily =
+        Families.ToDictionary(
+            static family => family,
+            static family => (IReadOnlyList<GmPreset>)_presets.Where(p => p.Family == family).ToArray());
+
+    public static IReadOnlyList<GmPreset> Presets => _presets;
 
     public static IReadOnlyList<GmPreset> GetPresets(GmInstrumentFamily family)
     {
-        return _presets.Where(p => p.Family == family).ToArray();
+        return _presetsByFamily[family];
     }
 
     public static void ApplyPreset(GmPreset preset, SynthParameters parameters)

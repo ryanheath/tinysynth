@@ -25,7 +25,7 @@ internal static class SynthRenderer
             Rectangle buttonBounds = new(area.X + (i * (buttonWidth + buttonGap)), area.Y, buttonWidth, area.Height);
             bool isEnabled = oscillators[i].Enabled;
             bool isSelected = activeOscillatorIndex == i;
-            bool isHovered = Contains(buttonBounds, mousePosition);
+            bool isHovered = UiHitTesting.Contains(buttonBounds, mousePosition);
             Color fill = isEnabled
                 ? (isSelected ? UiTheme.AccentSoftColor : (isHovered ? UiTheme.PanelHoverColor : UiTheme.PanelColor))
                 : UiTheme.DisabledFillColor;
@@ -79,7 +79,7 @@ internal static class SynthRenderer
             int row = i / columnCount;
             Rectangle buttonBounds = new(area.X + (column * (buttonWidth + buttonGap)), area.Y + (row * (buttonHeight + buttonGap)), buttonWidth, buttonHeight);
             bool isSelected = currentValue == waveforms[i];
-            bool isHovered = Contains(buttonBounds, mousePosition);
+            bool isHovered = UiHitTesting.Contains(buttonBounds, mousePosition);
             Color fill = enabled
                 ? (isSelected ? UiTheme.AccentSoftColor : (isHovered ? UiTheme.PanelHoverColor : UiTheme.PanelColor))
                 : UiTheme.DisabledFillColor;
@@ -115,7 +115,7 @@ internal static class SynthRenderer
         {
             Rectangle buttonBounds = new(area.X + (i * (buttonWidth + buttonGap)), area.Y, buttonWidth, area.Height);
             bool isSelected = selectedIndex == i;
-            bool isHovered = Contains(buttonBounds, mousePosition);
+            bool isHovered = UiHitTesting.Contains(buttonBounds, mousePosition);
             const int buttonFontSize = 18;
             Color fill = isSelected ? UiTheme.AccentSoftColor : (isHovered ? UiTheme.PanelHoverColor : UiTheme.PanelColor);
             Color outline = isSelected ? UiTheme.AccentStrongColor : UiTheme.BorderColor;
@@ -150,7 +150,7 @@ internal static class SynthRenderer
         {
             Rectangle buttonBounds = new(area.X + (i * (buttonWidth + buttonGap)), area.Y, buttonWidth, area.Height);
             bool isSelected = currentValue == filterTypes[i];
-            bool isHovered = Contains(buttonBounds, mousePosition);
+            bool isHovered = UiHitTesting.Contains(buttonBounds, mousePosition);
             string buttonLabel = filterTypes[i] switch
             {
                 FilterType.Off => "Off",
@@ -248,7 +248,7 @@ internal static class SynthRenderer
         {
             Rectangle buttonBounds = new(area.X + (i * (buttonWidth + buttonGap)), area.Y, buttonWidth, area.Height);
             bool isSelected = currentValue == lfoShapes[i];
-            bool isHovered = Contains(buttonBounds, mousePosition);
+            bool isHovered = UiHitTesting.Contains(buttonBounds, mousePosition);
             Color fill = isSelected ? UiTheme.AccentSoftColor : (isHovered ? UiTheme.PanelHoverColor : UiTheme.PanelColor);
             Color outline = isSelected ? UiTheme.AccentStrongColor : UiTheme.BorderColor;
 
@@ -288,7 +288,7 @@ internal static class SynthRenderer
         Color effectiveAccentSoftColor = enabled ? UiTheme.AccentSoftColor : UiTheme.DisabledAccentSoftColor;
         Color effectiveAccentColor = enabled ? UiTheme.AccentColor : UiTheme.DisabledAccentColor;
 
-        if (enabled && mousePressed && Contains(knobBounds, mousePosition))
+        if (enabled && mousePressed && UiHitTesting.Contains(knobBounds, mousePosition))
         {
             activeSlider = index;
         }
@@ -378,7 +378,7 @@ internal static class SynthRenderer
             int row = i / columns;
             Rectangle buttonBounds = new(area.X + (column * (buttonWidth + gap)), area.Y + (row * (buttonHeight + gap)), buttonWidth, buttonHeight);
             bool isSelected = selectedIndex == i;
-            bool isHovered = Contains(buttonBounds, mousePosition);
+            bool isHovered = UiHitTesting.Contains(buttonBounds, mousePosition);
             string label = FormatFamilyLabel(families[i]);
             Color fill = isSelected ? UiTheme.AccentSoftColor : (isHovered ? new Color(245, 248, 255, 255) : UiTheme.PanelColor);
             Color outline = isSelected ? UiTheme.AccentStrongColor : UiTheme.BorderColor;
@@ -411,7 +411,7 @@ internal static class SynthRenderer
         {
             Rectangle buttonBounds = new(area.X, area.Y + (i * (buttonHeight + gap)), area.Width, buttonHeight);
             bool isSelected = selectedIndex == i;
-            bool isHovered = Contains(buttonBounds, mousePosition);
+            bool isHovered = UiHitTesting.Contains(buttonBounds, mousePosition);
             Color fill = isSelected ? UiTheme.AccentSoftColor : (isHovered ? new Color(245, 248, 255, 255) : UiTheme.PanelColor);
             Color outline = isSelected ? UiTheme.AccentStrongColor : UiTheme.BorderColor;
 
@@ -451,7 +451,7 @@ internal static class SynthRenderer
         Color effectiveAccentSoftColor = enabled ? UiTheme.AccentSoftColor : UiTheme.DisabledAccentSoftColor;
         Color effectiveAccentColor = enabled ? UiTheme.AccentColor : UiTheme.DisabledAccentColor;
 
-        if (enabled && mousePressed && Contains(trackBounds, mousePosition))
+        if (enabled && mousePressed && UiHitTesting.Contains(trackBounds, mousePosition))
         {
             activeSlider = index;
         }
@@ -548,7 +548,7 @@ internal static class SynthRenderer
         Vector2 mousePosition,
         bool mousePressed)
     {
-        bool isHovered = Contains(bounds, mousePosition);
+        bool isHovered = UiHitTesting.Contains(bounds, mousePosition);
         Color fill = enabled
             ? (value ? UiTheme.AccentSoftColor : (isHovered ? UiTheme.PanelHoverColor : UiTheme.PanelColor))
             : UiTheme.DisabledFillColor;
@@ -593,7 +593,7 @@ internal static class SynthRenderer
         Color effectiveAccentSoftColor = enabled ? UiTheme.AccentSoftColor : UiTheme.DisabledAccentSoftColor;
         Color effectiveAccentColor = enabled ? UiTheme.AccentColor : UiTheme.DisabledAccentColor;
 
-        if (enabled && mousePressed && Contains(knobBounds, mousePosition))
+        if (enabled && mousePressed && UiHitTesting.Contains(knobBounds, mousePosition))
         {
             activeSlider = index;
         }
@@ -881,14 +881,6 @@ internal static class SynthRenderer
         Graphics.DrawRectangleLinesEx(bounds, 1f, UiTheme.BorderColor);
     }
 
-    public static bool Contains(Rectangle bounds, Vector2 point)
-    {
-        return point.X >= bounds.X
-            && point.X <= bounds.X + bounds.Width
-            && point.Y >= bounds.Y
-            && point.Y <= bounds.Y + bounds.Height;
-    }
-
     private static TEnum DrawEnumButtons<TEnum>(
         Rectangle area,
         ReadOnlySpan<TEnum> values,
@@ -905,7 +897,7 @@ internal static class SynthRenderer
         {
             Rectangle buttonBounds = new(area.X + (i * (buttonWidth + buttonGap)), area.Y, buttonWidth, area.Height);
             bool isSelected = EqualityComparer<TEnum>.Default.Equals(currentValue, values[i]);
-            bool isHovered = Contains(buttonBounds, mousePosition);
+            bool isHovered = UiHitTesting.Contains(buttonBounds, mousePosition);
             string buttonLabel = labelSelector(values[i]);
             const int buttonFontSize = 18;
             Color fill = isSelected ? UiTheme.AccentSoftColor : (isHovered ? UiTheme.PanelHoverColor : UiTheme.PanelColor);
@@ -941,8 +933,8 @@ internal static class SynthRenderer
         Rectangle previousBounds = new(area.X, area.Y, arrowWidth, area.Height);
         Rectangle nextBounds = new(area.X + area.Width - arrowWidth, area.Y, arrowWidth, area.Height);
         Rectangle valueBounds = new(area.X + arrowWidth + 6f, area.Y, area.Width - ((arrowWidth * 2f) + 12f), area.Height);
-        bool isPreviousHovered = Contains(previousBounds, mousePosition);
-        bool isNextHovered = Contains(nextBounds, mousePosition);
+        bool isPreviousHovered = UiHitTesting.Contains(previousBounds, mousePosition);
+        bool isNextHovered = UiHitTesting.Contains(nextBounds, mousePosition);
         bool canInteract = enabled && mousePressed;
 
         if (canInteract && isPreviousHovered)
@@ -987,8 +979,8 @@ internal static class SynthRenderer
         Rectangle previousBounds = new(area.X, area.Y, arrowWidth, area.Height);
         Rectangle nextBounds = new(area.X + area.Width - arrowWidth, area.Y, arrowWidth, area.Height);
         Rectangle valueBounds = new(area.X + arrowWidth + 6f, area.Y, area.Width - ((arrowWidth * 2f) + 12f), area.Height);
-        bool isPreviousHovered = Contains(previousBounds, mousePosition);
-        bool isNextHovered = Contains(nextBounds, mousePosition);
+        bool isPreviousHovered = UiHitTesting.Contains(previousBounds, mousePosition);
+        bool isNextHovered = UiHitTesting.Contains(nextBounds, mousePosition);
         bool canInteract = enabled && mousePressed;
 
         if (canInteract && isPreviousHovered)

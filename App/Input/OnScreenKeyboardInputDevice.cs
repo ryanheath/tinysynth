@@ -19,7 +19,7 @@ internal sealed class OnScreenKeyboardInputDevice : IOnScreenInputDevice
 
     public void Update(InputDeviceContext context, ICollection<InputAction> actions)
     {
-        if (context.MousePressed && Contains(_holdPedalBounds, context.MousePosition))
+        if (context.MousePressed && UiHitTesting.Contains(_holdPedalBounds, context.MousePosition))
         {
             actions.Add(new HoldPedalSetInputAction(!context.HoldPedalEnabled));
         }
@@ -43,13 +43,5 @@ internal sealed class OnScreenKeyboardInputDevice : IOnScreenInputDevice
         {
             actions.Add(new NoteActiveInputAction(_activePointerMidiNote, DefaultVelocity));
         }
-    }
-
-    private static bool Contains(Raylib_CSharp.Transformations.Rectangle bounds, System.Numerics.Vector2 point)
-    {
-        return point.X >= bounds.X
-            && point.X <= bounds.X + bounds.Width
-            && point.Y >= bounds.Y
-            && point.Y <= bounds.Y + bounds.Height;
     }
 }

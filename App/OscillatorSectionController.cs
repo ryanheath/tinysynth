@@ -35,7 +35,7 @@ internal static class OscillatorSectionController
         Graphics.DrawText($"Waveform · Oscillator {activeOscillatorIndex + 1}", (int)controlPanel.X + 20, (int)controlPanel.Y + 162, 18, UiTheme.MutedTextColor);
         Rectangle oscillatorEnabledBounds = new(layout.OscillatorButtonsArea.X + layout.OscillatorButtonsArea.Width + 20, layout.OscillatorButtonsArea.Y + 6, 192, 24);
 
-        if (mousePressed && SynthRenderer.Contains(oscillatorEnabledBounds, mousePosition))
+        if (mousePressed && UiHitTesting.Contains(oscillatorEnabledBounds, mousePosition))
         {
             activeOscillator.Enabled = !activeOscillator.Enabled;
             resetActiveSlider = true;
