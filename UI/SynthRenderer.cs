@@ -417,8 +417,8 @@ internal static class SynthRenderer
 
             Graphics.DrawRectangleRec(buttonBounds, fill);
             Graphics.DrawRectangleLinesEx(buttonBounds, isSelected ? 2.5f : 1f, outline);
-            Graphics.DrawText(presets[i].Name, (int)buttonBounds.X + 14, (int)buttonBounds.Y + 12, 20, UiTheme.TextColor);
-            DrawWrappedText(presets[i].Description, buttonBounds.X + 14, buttonBounds.Y + 40, buttonBounds.Width - 28, 16, UiTheme.MutedTextColor);
+            Graphics.DrawText(presets[i].Name, (int)buttonBounds.X + 14, (int)buttonBounds.Y + 6, 20, UiTheme.TextColor);
+            DrawWrappedText(presets[i].Description, buttonBounds.X + 14, buttonBounds.Y + 28, buttonBounds.Width - 28, 16, UiTheme.MutedTextColor);
 
             if (mousePressed && isHovered)
             {
