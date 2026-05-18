@@ -11,7 +11,7 @@ internal static class FxSectionController
     public static void Draw(
         Rectangle controlPanel,
         LayoutMetrics layout,
-        ref int activeSlider,
+        ref UiControlId? activeSlider,
         float fxSliderY,
         float fxSliderRowTwoY,
         float fxSliderWidth,
@@ -37,7 +37,7 @@ internal static class FxSectionController
         bool delayEnabled = synthParameters.DelayType != DelayType.Off;
 
         synthParameters.ChorusMix = SynthRenderer.DrawSlider(
-            index: 15,
+            index: UiControlId.FxChorusMix,
             activeSlider: ref activeSlider,
             enabled: chorusEnabled,
             label: "Chorus mix",
@@ -51,7 +51,7 @@ internal static class FxSectionController
             mouseDown: mouseDown);
 
         synthParameters.ChorusRateHz = SynthRenderer.DrawSlider(
-            index: 16,
+            index: UiControlId.FxChorusRate,
             activeSlider: ref activeSlider,
             enabled: chorusEnabled,
             label: "Chorus rate",
@@ -65,7 +65,7 @@ internal static class FxSectionController
             mouseDown: mouseDown);
 
         synthParameters.ChorusDepth = SynthRenderer.DrawSlider(
-            index: 17,
+            index: UiControlId.FxChorusDepth,
             activeSlider: ref activeSlider,
             enabled: chorusEnabled,
             label: "Chorus depth",
@@ -79,7 +79,7 @@ internal static class FxSectionController
             mouseDown: mouseDown);
 
         synthParameters.ChorusTremoloDepth = SynthRenderer.DrawSlider(
-            index: 27,
+            index: UiControlId.FxChorusTremoloDepth,
             activeSlider: ref activeSlider,
             enabled: chorusEnabled,
             label: "Chorus trem",
@@ -93,7 +93,7 @@ internal static class FxSectionController
             mouseDown: mouseDown);
 
         synthParameters.ReverbMix = SynthRenderer.DrawSlider(
-            index: 18,
+            index: UiControlId.FxReverbMix,
             activeSlider: ref activeSlider,
             enabled: reverbEnabled,
             label: "Reverb mix",
@@ -107,7 +107,7 @@ internal static class FxSectionController
             mouseDown: mouseDown);
 
         synthParameters.ReverbSize = SynthRenderer.DrawSlider(
-            index: 19,
+            index: UiControlId.FxReverbSize,
             activeSlider: ref activeSlider,
             enabled: reverbEnabled,
             label: "Reverb size",
@@ -121,7 +121,7 @@ internal static class FxSectionController
             mouseDown: mouseDown);
 
         synthParameters.ReverbDamping = SynthRenderer.DrawSlider(
-            index: 20,
+            index: UiControlId.FxReverbDamping,
             activeSlider: ref activeSlider,
             enabled: reverbEnabled,
             label: "Reverb damp",
@@ -135,7 +135,7 @@ internal static class FxSectionController
             mouseDown: mouseDown);
 
         synthParameters.DelayMix = SynthRenderer.DrawSlider(
-            index: 21,
+            index: UiControlId.FxDelayMix,
             activeSlider: ref activeSlider,
             enabled: delayEnabled,
             label: "Delay mix",
@@ -149,7 +149,7 @@ internal static class FxSectionController
             mouseDown: mouseDown);
 
         synthParameters.DelayTimeSeconds = SynthRenderer.DrawSlider(
-            index: 22,
+            index: UiControlId.FxDelayTime,
             activeSlider: ref activeSlider,
             enabled: delayEnabled,
             label: "Delay time",
@@ -163,7 +163,7 @@ internal static class FxSectionController
             mouseDown: mouseDown);
 
         synthParameters.DelayFeedback = SynthRenderer.DrawSlider(
-            index: 23,
+            index: UiControlId.FxDelayFeedback,
             activeSlider: ref activeSlider,
             enabled: delayEnabled,
             label: "Delay fb",

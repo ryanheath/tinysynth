@@ -15,7 +15,7 @@ internal static class KeyboardController
         int hoveredMidiNote,
         bool holdPedalEnabled,
         PianoKeyLayout[] keys,
-        ref int activeSlider,
+        ref UiControlId? activeSlider,
         float masterVolume,
         Vector2 mousePosition,
         bool mousePressed,
@@ -24,7 +24,7 @@ internal static class KeyboardController
         Graphics.DrawText("Keyboard", (int)keyboardPanel.X + 18, (int)keyboardPanel.Y + 14, 22, UiTheme.TextColor);
 
         float newMasterVolume = SynthRenderer.DrawSlider(
-            index: 9,
+            index: UiControlId.KeyboardMasterVolume,
             activeSlider: ref activeSlider,
             enabled: true,
             label: "Master",

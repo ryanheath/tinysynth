@@ -14,7 +14,7 @@ internal static class FilterSectionController
         LayoutMetrics layout,
         AudioStreamPump audioStreamPump,
         int sampleRate,
-        ref int activeSlider,
+        ref UiControlId? activeSlider,
         Vector2 mousePosition,
         bool mousePressed,
         bool mouseDown,
@@ -27,7 +27,7 @@ internal static class FilterSectionController
         synthParameters.FilterType = SynthRenderer.DrawFilterButtons(layout.FilterButtonsArea, synthParameters.FilterType, mousePosition, mousePressed);
 
         normalizedCutoff = SynthRenderer.DrawSlider(
-            index: 10,
+            index: UiControlId.FilterCutoff,
             activeSlider: ref activeSlider,
             enabled: synthParameters.FilterType != FilterType.Off,
             label: "Cutoff",
@@ -43,7 +43,7 @@ internal static class FilterSectionController
         synthParameters.FilterCutoffHz = GetFrequencyFromLogNormalized(normalizedCutoff, 20f, maxFilterCutoffHz);
 
         synthParameters.FilterResonance = SynthRenderer.DrawSlider(
-            index: 11,
+            index: UiControlId.FilterResonance,
             activeSlider: ref activeSlider,
             enabled: synthParameters.FilterType != FilterType.Off,
             label: "Resonance",
@@ -57,7 +57,7 @@ internal static class FilterSectionController
             mouseDown: mouseDown);
 
         synthParameters.FilterEnvelopeAmount = SynthRenderer.DrawSlider(
-            index: 12,
+            index: UiControlId.FilterEnvelopeAmount,
             activeSlider: ref activeSlider,
             enabled: synthParameters.FilterType != FilterType.Off,
             label: "Env amt",
@@ -71,7 +71,7 @@ internal static class FilterSectionController
             mouseDown: mouseDown);
 
         synthParameters.FilterLfoDepth = SynthRenderer.DrawSlider(
-            index: 13,
+            index: UiControlId.FilterLfoDepth,
             activeSlider: ref activeSlider,
             enabled: synthParameters.FilterType != FilterType.Off,
             label: "LFO depth",
@@ -85,7 +85,7 @@ internal static class FilterSectionController
             mouseDown: mouseDown);
 
         synthParameters.FilterLfoRateHz = SynthRenderer.DrawSlider(
-            index: 14,
+            index: UiControlId.FilterLfoRate,
             activeSlider: ref activeSlider,
             enabled: synthParameters.FilterType != FilterType.Off,
             label: "LFO rate",

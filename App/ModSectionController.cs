@@ -11,7 +11,7 @@ internal static class ModSectionController
     public static void Draw(
         Rectangle controlPanel,
         LayoutMetrics layout,
-        ref int activeSlider,
+        ref UiControlId? activeSlider,
         Vector2 mousePosition,
         bool mousePressed,
         bool mouseDown,
@@ -33,7 +33,7 @@ internal static class ModSectionController
             mousePressed);
 
         synthParameters.Lfo1.RateHz = SynthRenderer.DrawKnobSlider(
-            index: 40,
+            index: UiControlId.ModulationLfo1Rate,
             activeSlider: ref activeSlider,
             enabled: true,
             label: "Rate",
@@ -47,7 +47,7 @@ internal static class ModSectionController
             mouseDown: mouseDown);
 
         synthParameters.Lfo1.Depth = SynthRenderer.DrawKnobSlider(
-            index: 41,
+            index: UiControlId.ModulationLfo1Depth,
             activeSlider: ref activeSlider,
             enabled: true,
             label: "Depth",
@@ -68,7 +68,7 @@ internal static class ModSectionController
             mousePressed);
 
         synthParameters.Lfo2.RateHz = SynthRenderer.DrawKnobSlider(
-            index: 42,
+            index: UiControlId.ModulationLfo2Rate,
             activeSlider: ref activeSlider,
             enabled: true,
             label: "Rate",
@@ -82,7 +82,7 @@ internal static class ModSectionController
             mouseDown: mouseDown);
 
         synthParameters.Lfo2.Depth = SynthRenderer.DrawKnobSlider(
-            index: 43,
+            index: UiControlId.ModulationLfo2Depth,
             activeSlider: ref activeSlider,
             enabled: true,
             label: "Depth",
@@ -128,7 +128,7 @@ internal static class ModSectionController
 
             Graphics.DrawText($"Amt {route.Amount:0.00}", (int)amountLabelBounds.X, (int)amountLabelBounds.Y, 14, routeActive ? UiTheme.MutedTextColor : UiTheme.DisabledSecondaryTextColor);
             route.Amount = SynthRenderer.DrawCompactSlider(
-                index: 50 + routeIndex,
+                index: UiControlIds.RouteAmount(routeIndex),
                 activeSlider: ref activeSlider,
                 enabled: routeActive,
                 bounds: amountBounds,

@@ -5,6 +5,22 @@ internal sealed class SynthParameters
     public const int OscillatorCount = 4;
     public const int ModulationRouteCount = 6;
 
+    private const float DefaultFilterCutoffHz = 12_000f;
+    private const float DefaultFilterResonance = 0.15f;
+    private const float DefaultFilterEnvelopeAmount = 0f;
+    private const float DefaultFilterLfoDepth = 0f;
+    private const float DefaultFilterLfoRateHz = 2.5f;
+    private const float DefaultChorusMix = 0f;
+    private const float DefaultChorusRateHz = 0.8f;
+    private const float DefaultChorusDepth = 0.35f;
+    private const float DefaultChorusTremoloDepth = 0f;
+    private const float DefaultReverbMix = 0f;
+    private const float DefaultReverbSize = 0.45f;
+    private const float DefaultReverbDamping = 0.35f;
+    private const float DefaultDelayMix = 0f;
+    private const float DefaultDelayTimeSeconds = 0.28f;
+    private const float DefaultDelayFeedback = 0.30f;
+
     private readonly OscillatorParameters[] _oscillators =
     [
         new(),
@@ -33,66 +49,66 @@ internal sealed class SynthParameters
 
     public FilterType FilterType { get; set; } = FilterType.Off;
 
-    public float FilterCutoffHz { get; set; } = 12_000f;
+    public float FilterCutoffHz { get; set; } = DefaultFilterCutoffHz;
 
-    public float FilterResonance { get; set; } = 0.15f;
+    public float FilterResonance { get; set; } = DefaultFilterResonance;
 
-    public float FilterEnvelopeAmount { get; set; } = 0f;
+    public float FilterEnvelopeAmount { get; set; } = DefaultFilterEnvelopeAmount;
 
-    public float FilterLfoDepth { get; set; } = 0f;
+    public float FilterLfoDepth { get; set; } = DefaultFilterLfoDepth;
 
-    public float FilterLfoRateHz { get; set; } = 2.5f;
+    public float FilterLfoRateHz { get; set; } = DefaultFilterLfoRateHz;
 
     public ChorusType ChorusType { get; set; } = ChorusType.Off;
 
-    public float ChorusMix { get; set; } = 0f;
+    public float ChorusMix { get; set; } = DefaultChorusMix;
 
-    public float ChorusRateHz { get; set; } = 0.8f;
+    public float ChorusRateHz { get; set; } = DefaultChorusRateHz;
 
-    public float ChorusDepth { get; set; } = 0.35f;
+    public float ChorusDepth { get; set; } = DefaultChorusDepth;
 
-    public float ChorusTremoloDepth { get; set; } = 0f;
+    public float ChorusTremoloDepth { get; set; } = DefaultChorusTremoloDepth;
 
     public ReverbType ReverbType { get; set; } = ReverbType.Off;
 
-    public float ReverbMix { get; set; } = 0f;
+    public float ReverbMix { get; set; } = DefaultReverbMix;
 
-    public float ReverbSize { get; set; } = 0.45f;
+    public float ReverbSize { get; set; } = DefaultReverbSize;
 
-    public float ReverbDamping { get; set; } = 0.35f;
+    public float ReverbDamping { get; set; } = DefaultReverbDamping;
 
     public DelayType DelayType { get; set; } = DelayType.Off;
 
-    public float DelayMix { get; set; } = 0f;
+    public float DelayMix { get; set; } = DefaultDelayMix;
 
-    public float DelayTimeSeconds { get; set; } = 0.28f;
+    public float DelayTimeSeconds { get; set; } = DefaultDelayTimeSeconds;
 
-    public float DelayFeedback { get; set; } = 0.30f;
+    public float DelayFeedback { get; set; } = DefaultDelayFeedback;
 
     public void ResetToDefaults()
     {
         FilterType = FilterType.Off;
-        FilterCutoffHz = 12_000f;
-        FilterResonance = 0.15f;
-        FilterEnvelopeAmount = 0f;
-        FilterLfoDepth = 0f;
-        FilterLfoRateHz = 2.5f;
+        FilterCutoffHz = DefaultFilterCutoffHz;
+        FilterResonance = DefaultFilterResonance;
+        FilterEnvelopeAmount = DefaultFilterEnvelopeAmount;
+        FilterLfoDepth = DefaultFilterLfoDepth;
+        FilterLfoRateHz = DefaultFilterLfoRateHz;
 
         ChorusType = ChorusType.Off;
-        ChorusMix = 0f;
-        ChorusRateHz = 0.8f;
-        ChorusDepth = 0.35f;
-        ChorusTremoloDepth = 0f;
+        ChorusMix = DefaultChorusMix;
+        ChorusRateHz = DefaultChorusRateHz;
+        ChorusDepth = DefaultChorusDepth;
+        ChorusTremoloDepth = DefaultChorusTremoloDepth;
 
         ReverbType = ReverbType.Off;
-        ReverbMix = 0f;
-        ReverbSize = 0.45f;
-        ReverbDamping = 0.35f;
+        ReverbMix = DefaultReverbMix;
+        ReverbSize = DefaultReverbSize;
+        ReverbDamping = DefaultReverbDamping;
 
         DelayType = DelayType.Off;
-        DelayMix = 0f;
-        DelayTimeSeconds = 0.28f;
-        DelayFeedback = 0.30f;
+        DelayMix = DefaultDelayMix;
+        DelayTimeSeconds = DefaultDelayTimeSeconds;
+        DelayFeedback = DefaultDelayFeedback;
 
         Lfo1.ResetToDefaults();
         Lfo2.ResetToDefaults();
@@ -124,52 +140,66 @@ internal sealed class SynthParameters
 
 internal sealed class OscillatorParameters
 {
-    public bool Enabled { get; set; } = true;
+    private const bool DefaultEnabled = true;
+    private const float DefaultGain = 0.80f;
+    private const float DefaultDetuneCents = 0f;
+    private const float DefaultGlideSeconds = 0f;
+    private const float DefaultVibratoDepthCents = 0f;
+    private const float DefaultVibratoRateHz = 5f;
+    private const float DefaultPulseWidth = 0.50f;
+    private const float DefaultPwmRateHz = 0f;
+    private const float DefaultPan = 0f;
+    private const float DefaultAttackSeconds = 0.05f;
+    private const float DefaultDecaySeconds = 0.18f;
+    private const float DefaultSustainLevel = 0.72f;
+    private const float DefaultReleaseSeconds = 0.30f;
+
+    public bool Enabled { get; set; } = DefaultEnabled;
 
     public Waveform Waveform { get; set; } = Waveform.Sine;
 
-    public float Gain { get; set; } = 0.80f;
+    public float Gain { get; set; } = DefaultGain;
 
-    public float DetuneCents { get; set; } = 0f;
+    public float DetuneCents { get; set; } = DefaultDetuneCents;
 
-    public float GlideSeconds { get; set; } = 0f;
+    public float GlideSeconds { get; set; } = DefaultGlideSeconds;
 
-    public float VibratoDepthCents { get; set; } = 0f;
+    public float VibratoDepthCents { get; set; } = DefaultVibratoDepthCents;
 
-    public float VibratoRateHz { get; set; } = 5f;
+    public float VibratoRateHz { get; set; } = DefaultVibratoRateHz;
 
-    public float PulseWidth { get; set; } = 0.50f;
+    public float PulseWidth { get; set; } = DefaultPulseWidth;
 
-    public float PwmRateHz { get; set; } = 0f;
+    public float PwmRateHz { get; set; } = DefaultPwmRateHz;
 
-    public float Pan { get; set; } = 0f;
+    public float Pan { get; set; } = DefaultPan;
 
     public EnvelopeMode EnvelopeMode { get; set; } = EnvelopeMode.Sustain;
 
-    public float AttackSeconds { get; set; } = 0.05f;
+    public float AttackSeconds { get; set; } = DefaultAttackSeconds;
 
-    public float DecaySeconds { get; set; } = 0.18f;
+    public float DecaySeconds { get; set; } = DefaultDecaySeconds;
 
-    public float SustainLevel { get; set; } = 0.72f;
+    public float SustainLevel { get; set; } = DefaultSustainLevel;
 
-    public float ReleaseSeconds { get; set; } = 0.30f;
+    public float ReleaseSeconds { get; set; } = DefaultReleaseSeconds;
 
     public void ResetToDefaults()
     {
-        Enabled = true;
+        Enabled = DefaultEnabled;
         Waveform = Waveform.Sine;
-        Gain = 0.80f;
-        DetuneCents = 0f;
-        GlideSeconds = 0f;
-        VibratoDepthCents = 0f;
-        VibratoRateHz = 5f;
-        PulseWidth = 0.50f;
-        PwmRateHz = 0f;
-        Pan = 0f;
+        Gain = DefaultGain;
+        DetuneCents = DefaultDetuneCents;
+        GlideSeconds = DefaultGlideSeconds;
+        VibratoDepthCents = DefaultVibratoDepthCents;
+        VibratoRateHz = DefaultVibratoRateHz;
+        PulseWidth = DefaultPulseWidth;
+        PwmRateHz = DefaultPwmRateHz;
+        Pan = DefaultPan;
         EnvelopeMode = EnvelopeMode.Sustain;
-        AttackSeconds = 0.05f;
-        DecaySeconds = 0.18f;
-        SustainLevel = 0.72f;
-        ReleaseSeconds = 0.30f;
+        AttackSeconds = DefaultAttackSeconds;
+        DecaySeconds = DefaultDecaySeconds;
+        SustainLevel = DefaultSustainLevel;
+        ReleaseSeconds = DefaultReleaseSeconds;
     }
 }

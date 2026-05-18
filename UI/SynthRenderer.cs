@@ -3,6 +3,7 @@ using Raylib_CSharp.Fonts;
 using Raylib_CSharp.Rendering;
 using Raylib_CSharp.Transformations;
 using System.Numerics;
+using TinySynth.App;
 using TinySynth.Synth;
 
 namespace TinySynth.UI;
@@ -265,8 +266,8 @@ internal static class SynthRenderer
     }
 
     public static float DrawKnobSlider(
-        int index,
-        ref int activeSlider,
+        UiControlId index,
+        ref UiControlId? activeSlider,
         bool enabled,
         string label,
         string valueLabel,
@@ -429,8 +430,8 @@ internal static class SynthRenderer
     }
 
     public static float DrawSlider(
-        int index,
-        ref int activeSlider,
+        UiControlId index,
+        ref UiControlId? activeSlider,
         bool enabled,
         string label,
         string valueLabel,
@@ -573,8 +574,8 @@ internal static class SynthRenderer
     }
 
     public static float DrawCompactSlider(
-        int index,
-        ref int activeSlider,
+        UiControlId index,
+        ref UiControlId? activeSlider,
         bool enabled,
         Rectangle bounds,
         float value,

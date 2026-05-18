@@ -16,7 +16,7 @@ internal static class OscillatorSectionController
         Rectangle controlPanel,
         LayoutMetrics layout,
         int activeOscillatorIndex,
-        ref int activeSlider,
+        ref UiControlId? activeSlider,
         float sliderRowOneY,
         float sliderRowTwoY,
         float sliderRowThreeY,
@@ -43,7 +43,7 @@ internal static class OscillatorSectionController
 
         if (resetActiveSlider)
         {
-            activeSlider = -1;
+            activeSlider = null;
         }
 
         SynthRenderer.DrawToggle(
@@ -60,7 +60,7 @@ internal static class OscillatorSectionController
             mousePressed);
 
         activeOscillator.Gain = SynthRenderer.DrawSlider(
-            index: 0,
+            index: UiControlId.OscillatorGain,
             activeSlider: ref activeSlider,
             enabled: activeOscillator.Enabled,
             label: "Gain",
@@ -74,7 +74,7 @@ internal static class OscillatorSectionController
             mouseDown: mouseDown);
 
         activeOscillator.DetuneCents = SynthRenderer.DrawSlider(
-            index: 1,
+            index: UiControlId.OscillatorDetune,
             activeSlider: ref activeSlider,
             enabled: activeOscillator.Enabled,
             label: "Detune",
@@ -88,7 +88,7 @@ internal static class OscillatorSectionController
             mouseDown: mouseDown);
 
         activeOscillator.GlideSeconds = SynthRenderer.DrawSlider(
-            index: 2,
+            index: UiControlId.OscillatorGlide,
             activeSlider: ref activeSlider,
             enabled: activeOscillator.Enabled,
             label: "Glide",
@@ -102,7 +102,7 @@ internal static class OscillatorSectionController
             mouseDown: mouseDown);
 
         activeOscillator.VibratoDepthCents = SynthRenderer.DrawSlider(
-            index: 3,
+            index: UiControlId.OscillatorVibratoDepth,
             activeSlider: ref activeSlider,
             enabled: activeOscillator.Enabled,
             label: "Vib depth",
@@ -116,7 +116,7 @@ internal static class OscillatorSectionController
             mouseDown: mouseDown);
 
         activeOscillator.VibratoRateHz = SynthRenderer.DrawSlider(
-            index: 4,
+            index: UiControlId.OscillatorVibratoRate,
             activeSlider: ref activeSlider,
             enabled: activeOscillator.Enabled,
             label: "Vib rate",
@@ -130,7 +130,7 @@ internal static class OscillatorSectionController
             mouseDown: mouseDown);
 
         activeOscillator.AttackSeconds = SynthRenderer.DrawSlider(
-            index: 5,
+            index: UiControlId.OscillatorAttack,
             activeSlider: ref activeSlider,
             enabled: activeOscillator.Enabled,
             label: "Attack",
@@ -144,7 +144,7 @@ internal static class OscillatorSectionController
             mouseDown: mouseDown);
 
         activeOscillator.DecaySeconds = SynthRenderer.DrawSlider(
-            index: 6,
+            index: UiControlId.OscillatorDecay,
             activeSlider: ref activeSlider,
             enabled: activeOscillator.Enabled,
             label: "Decay",
@@ -158,7 +158,7 @@ internal static class OscillatorSectionController
             mouseDown: mouseDown);
 
         activeOscillator.SustainLevel = SynthRenderer.DrawSlider(
-            index: 7,
+            index: UiControlId.OscillatorSustain,
             activeSlider: ref activeSlider,
             enabled: activeOscillator.Enabled,
             label: "Sustain",
@@ -172,7 +172,7 @@ internal static class OscillatorSectionController
             mouseDown: mouseDown);
 
         activeOscillator.ReleaseSeconds = SynthRenderer.DrawSlider(
-            index: 8,
+            index: UiControlId.OscillatorRelease,
             activeSlider: ref activeSlider,
             enabled: activeOscillator.Enabled,
             label: "Release",
@@ -186,7 +186,7 @@ internal static class OscillatorSectionController
             mouseDown: mouseDown);
 
         activeOscillator.PulseWidth = SynthRenderer.DrawSlider(
-            index: 24,
+            index: UiControlId.OscillatorPulseWidth,
             activeSlider: ref activeSlider,
             enabled: activeOscillator.Enabled && activeOscillator.Waveform == Waveform.Square,
             label: "Pulse width",
@@ -200,7 +200,7 @@ internal static class OscillatorSectionController
             mouseDown: mouseDown);
 
         activeOscillator.PwmRateHz = SynthRenderer.DrawSlider(
-            index: 25,
+            index: UiControlId.OscillatorPwmRate,
             activeSlider: ref activeSlider,
             enabled: activeOscillator.Enabled && activeOscillator.Waveform == Waveform.Square,
             label: "PWM rate",
@@ -214,7 +214,7 @@ internal static class OscillatorSectionController
             mouseDown: mouseDown);
 
         activeOscillator.Pan = SynthRenderer.DrawSlider(
-            index: 26,
+            index: UiControlId.OscillatorPan,
             activeSlider: ref activeSlider,
             enabled: activeOscillator.Enabled,
             label: "Pan",

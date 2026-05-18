@@ -46,7 +46,7 @@ internal sealed class TinySynthController : IDisposable
     private int _activeOscillatorIndex;
     private int _activePresetFamilyIndex;
     private int _activePresetIndex;
-    private int _activeSlider = -1;
+    private UiControlId? _activeSlider;
     private ParameterSection _activeParameterSection = ParameterSection.Presets;
     private float _masterVolume;
 
@@ -113,7 +113,7 @@ internal sealed class TinySynthController : IDisposable
 
         if (!mouseDown)
         {
-            _activeSlider = -1;
+            _activeSlider = null;
         }
 
         float sliderRowOneY = layout.SliderRowOneY;
@@ -160,7 +160,7 @@ internal sealed class TinySynthController : IDisposable
 
         if (previousParameterSection != _activeParameterSection)
         {
-            _activeSlider = -1;
+            _activeSlider = null;
         }
 
         switch (_activeParameterSection)
@@ -182,7 +182,7 @@ internal sealed class TinySynthController : IDisposable
                     if (presetSectionResult.PresetApplied)
                     {
                         _activeOscillatorIndex = 0;
-                        _activeSlider = -1;
+                        _activeSlider = null;
                     }
 
                     break;
