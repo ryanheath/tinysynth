@@ -5,30 +5,40 @@ namespace TinySynth.Synth.Nodes;
 internal sealed class VoiceMixerNode(string name, bool normalizeByVoiceCount, params AudioNode[] inputs) : AudioNode(name, inputs)
 {
     private const float SilenceThreshold = 0.000001f;
+    private const float SilenceEnergyThreshold = SilenceThreshold * SilenceThreshold;
 
     private readonly bool _normalizeByVoiceCount = normalizeByVoiceCount;
 
     protected override void Process(in AudioRenderContext context, IReadOnlyList<AudioNode> inputs, AudioBuffer output)
     {
-        int activeInputCount = 0;
         Span<float> mixedSamples = output.Samples;
+        float totalEnergy = 0f;
+        float loudestInputEnergy = 0f;
 
         foreach (AudioNode input in inputs)
         {
-            if (!AddIfAudible(input.Output, mixedSamples))
+            float inputEnergy = AddAndMeasureEnergy(input.Output, mixedSamples);
+
+            if (inputEnergy <= SilenceEnergyThreshold)
             {
                 continue;
             }
 
-            activeInputCount++;
+            totalEnergy += inputEnergy;
+            loudestInputEnergy = MathF.Max(loudestInputEnergy, inputEnergy);
         }
 
-        if (!_normalizeByVoiceCount || activeInputCount <= 1)
+        if (!_normalizeByVoiceCount || totalEnergy <= 0f || loudestInputEnergy <= 0f)
         {
             return;
         }
 
-        float scale = 1f / MathF.Sqrt(activeInputCount);
+        float scale = MathF.Sqrt(loudestInputEnergy / totalEnergy);
+
+        if (scale >= 0.9999f)
+        {
+            return;
+        }
 
         for (int i = 0; i < mixedSamples.Length; i++)
         {
@@ -36,24 +46,25 @@ internal sealed class VoiceMixerNode(string name, bool normalizeByVoiceCount, pa
         }
     }
 
-    private static bool AddIfAudible(AudioBuffer buffer, Span<float> destination)
+    private static float AddAndMeasureEnergy(AudioBuffer buffer, Span<float> destination)
     {
         ReadOnlySpan<float> samples = buffer.ReadOnlySamples;
         int sampleCount = Math.Min(samples.Length, destination.Length);
-        bool hasAudibleSample = false;
+
+        if (sampleCount == 0)
+        {
+            return 0f;
+        }
+
+        double sumSquares = 0d;
 
         for (int i = 0; i < sampleCount; i++)
         {
             float sample = samples[i];
-
-            if (!hasAudibleSample && MathF.Abs(sample) > SilenceThreshold)
-            {
-                hasAudibleSample = true;
-            }
-
             destination[i] += sample;
+            sumSquares += sample * sample;
         }
 
-        return hasAudibleSample;
+        return (float)(sumSquares / sampleCount);
     }
 }
